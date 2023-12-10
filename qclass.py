@@ -7,7 +7,7 @@ from qibo.optimizers import optimize
 
 class MyClass:
     def __init__(
-        self, resize, layers=1, training_sample=200, method="l-bfgs-b", binary="yes"
+        self, resize, layers=1, training_sample=5, method="l-bfgs-b", binary="yes"
     ):
         self.epochs = 100
         self.learning_rate = 0.001
@@ -20,6 +20,7 @@ class MyClass:
         self.filt = "yes"
         self.binary = binary
         self.resize = resize
+        self.vparams = np.random.normal(loc=0, scale=1, size=(198,))
         self.embed_params = np.random.normal(loc=0, scale=1, size=(162,))
         self.average_params = np.random.normal(loc=0, scale=1, size=(18,))
         self.max_params = np.random.normal(loc=0, scale=1, size=(18,))
@@ -74,7 +75,7 @@ class MyClass:
         """
         c = Circuit(9)
         for q, value in enumerate(simple_list):
-            rx = self.average_params[q * 2] * value + self.average_params[q * 2 + 1]
+            rx = self.vparams[q * 2 + 162] * value + self.vparams[(q * 2 + 1) + 162]
             c.add(gates.RX(q, theta=rx))
         return c
 
@@ -85,7 +86,7 @@ class MyClass:
         """
         c = Circuit(9)
         for q, value in enumerate(simple_list):
-            rx = self.average_params[q * 2] * value + self.average_params[q * 2 + 1]
+            rx = self.vparams[q * 2 + 180] * value + self.vparams[(q * 2 + 1) + 180]
             c.add(gates.RX(q, theta=rx))
         return c
 
@@ -110,13 +111,9 @@ class MyClass:
         c = Circuit(9)
         for k, block in enumerate(blocks):
             for i, x in enumerate(block):
-                ry_0 = self.embed_params[i * 6] * x[0] + self.embed_params[i * 6 + 1]
-                rz_1 = (
-                    self.embed_params[i * 6 + 2] * x[1] + self.embed_params[i * 6 + 3]
-                )
-                ry_2 = (
-                    self.embed_params[i * 6 + 4] * x[2] + self.embed_params[i * 6 + 5]
-                )
+                ry_0 = self.vparams[i * 6] * x[0] + self.vparams[i * 6 + 1]
+                rz_1 = self.vparams[i * 6 + 2] * x[1] + self.vparams[i * 6 + 3]
+                ry_2 = self.vparams[i * 6 + 4] * x[2] + self.vparams[i * 6 + 5]
                 c.add(gates.RY(k, theta=ry_0))
                 c.add(gates.RZ(k, theta=rz_1))
                 c.add(gates.RY(k, theta=ry_2))
@@ -199,26 +196,28 @@ class MyClass:
         expectation_value = self.hamiltonian.expectation(res_max.state())
         return expectation_value
 
-    def loss_function(self, embed_parameters=None):
-        if embed_parameters is None:
-            embed_parameters = self.embed_parameters
-        self.set_parameters(embed_parameters)
+    def loss_function(self, vparams=None):
+        if vparams is None:
+            vparams = self.vparams
+        self.set_parameters(vparams)
 
-        cf = 0
-        for x, y in zip(self.x_train, self.y_train):
+        predictions = []
+        for x in self.x_train:
             """
-            The outcome of the circuit will be a number
+            The outcome of the circuit will be a number in [-1, 1], hence
+            lo traslo in [0, 1].
             """
             exp = self.circuit(x)
             output = (exp + 1) / 2
-            cf += tf.keras.losses.BinaryCrossentropy()(y, output)
+            predictions.append(output)
 
+        cf = tf.keras.losses.BinaryCrossentropy()(self.y_train, predictions)
         return cf
 
     def training_loop(self):
         best, params, extra = optimize(
             self.loss_function,
-            self.embed_params,
+            self.vparams,
             method="parallel_L-BFGS-B",
         )
 
