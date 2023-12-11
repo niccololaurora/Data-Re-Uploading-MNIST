@@ -4,6 +4,8 @@ from qibo.symbols import Z
 from qibo import Circuit, gates, hamiltonians, set_backend
 from qibo.optimizers import optimize
 
+set_backend("tensorflow")
+
 
 class MyClass:
     def __init__(
@@ -28,8 +30,11 @@ class MyClass:
             Z(0) * Z(1) * Z(2) * Z(3) * Z(4) * Z(5) * Z(6) * Z(7) * Z(8)
         )
 
-    def set_parameters(self, embed_parameters):
-        self.embed_parameters = embed_parameters
+    def get_parameters(self):
+        return self.vparams
+
+    def set_parameters(self, vparams):
+        self.vparams = vparams
 
     def initialize_data(self):
         (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
