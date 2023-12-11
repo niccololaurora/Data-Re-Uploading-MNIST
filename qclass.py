@@ -222,18 +222,6 @@ class MyClass:
         cf = tf.keras.losses.BinaryCrossentropy()(self.y_train, predictions)
         return cf
 
-    def training_loop(self):
-        for i in range(self.epochs):
-            with open("file.txt", "a") as file:
-                print(f"Epoch {i+1}", file=file)
-            best, params, extra = self.optimize()
-            self.vparams = params
-
-            with open("file.txt", "a") as file:
-                print(f"Parametri finali {self.vparams[0:20]}", file=file)
-
-        return best, params, extra
-
     def test_loop(self):
         predictions = []
         for x in self.x_test:
@@ -252,7 +240,7 @@ class MyClass:
 
         return accuracy
 
-    def optimize(self):
+    def training_loop(self):
         if self.method == "sgd":
             # perform optimization
             options = {
