@@ -1,3 +1,4 @@
+import os
 from qclass import MyClass
 from qibo import set_backend
 
@@ -5,7 +6,22 @@ set_backend("tensorflow")
 
 
 def main():
-    my_class = MyClass(resize=9)
+    epochs = input("Insert epochs: ")
+    learning_rate = input("Insert learning rate: ")
+    training_sample = input("Insert size training sample: ")
+    while True:
+        method = input("Insert optimizer: ")
+        if method.istitle():
+            break
+        else:
+            print("The optimizer must start with a capital letter.")
+
+    my_class = MyClass(
+        epochs=epochs,
+        learning_rate=learning_rate,
+        training_sample=training_sample,
+        method=method,
+    )
 
     vparams = my_class.get_parameters()
 

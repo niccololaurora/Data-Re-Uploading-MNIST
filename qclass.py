@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import os
 import matplotlib.pyplot as plt
 from qibo.symbols import Z
 from qibo import Circuit, gates, hamiltonians, set_backend
@@ -10,10 +11,17 @@ set_backend("tensorflow")
 
 class MyClass:
     def __init__(
-        self, resize, layers=1, training_sample=5, method="l-bfgs-b", binary="yes"
+        self,
+        epochs,
+        learning_rate,
+        training_sample,
+        method,
+        layers=1,
+        resize=9,
     ):
-        self.epochs = 25
-        self.learning_rate = 0.001
+        self.epochs = epochs
+        self.method = method
+        self.learning_rate = learning_rate
         self.train_size = training_sample
         self.x_train = 0
         self.y_train = 0
@@ -21,14 +29,13 @@ class MyClass:
         self.y_test = 0
         self.block_size = 3
         self.filt = "yes"
-        self.method = "sgd"
-        self.binary = binary
+        self.method = method
         self.resize = resize
         self.loss_history = []
         self.vparams = np.random.normal(loc=0, scale=1, size=(198,))
-        self.embed_params = np.random.normal(loc=0, scale=1, size=(162,))
-        self.average_params = np.random.normal(loc=0, scale=1, size=(18,))
-        self.max_params = np.random.normal(loc=0, scale=1, size=(18,))
+        # self.embed_params = np.random.normal(loc=0, scale=1, size=(162,))
+        # self.average_params = np.random.normal(loc=0, scale=1, size=(18,))
+        # self.max_params = np.random.normal(loc=0, scale=1, size=(18,))
         self.hamiltonian = hamiltonians.SymbolicHamiltonian(
             Z(0) * Z(1) * Z(2) * Z(3) * Z(4) * Z(5) * Z(6) * Z(7) * Z(8)
         )
@@ -42,7 +49,7 @@ class MyClass:
     def plot_metrics(self):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
 
-        epochs = np.arange(0, self.epochs, 1)
+        epochs = np.arange(0, self.epochs + 1, 1)
         ax.plot(epochs, self.loss_history)
         ax.set_title("Mnist")
         ax.set_xlabel("Epochs")
@@ -257,10 +264,10 @@ class MyClass:
         if self.method == "sgd":
             # perform optimization
             options = {
-                "optimizer": "Adam",
-                "learning_rate": 0.001,
+                "optimizer": self.method,
+                "learning_rate": self.learning_rate,
                 "nepochs": self.epochs,
-                "nmessage": 1,
+                "nmessage": 5,
             }
             best, params, extra = optimize(
                 self.loss_function,
