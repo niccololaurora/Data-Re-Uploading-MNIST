@@ -19,6 +19,11 @@ def main():
     with open("file.txt", "a") as file:
         print(f"Parametri finali {params[0:20]}", file=file)
 
+    accuracy = my_class.test_loop()
+
+    with open("file.txt", "a") as file:
+        print(f"Accuracy {accuracy}", file=file)
+
 
 if __name__ == "__main__":
     main()

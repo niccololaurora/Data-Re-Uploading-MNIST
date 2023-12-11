@@ -232,6 +232,8 @@ class MyClass:
             with open("file.txt", "a") as file:
                 print(f"Parametri finali {self.vparams[0:20]}", file=file)
 
+        return best, params, extra
+
     def test_loop(self):
         predictions = []
         for x in self.x_test:
