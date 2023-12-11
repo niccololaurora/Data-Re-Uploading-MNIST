@@ -25,7 +25,7 @@ def main():
     with open("file.txt", "a") as file:
         print("/" * 60, file=file)
         print("/" * 60, file=file)
-        print(f"Accuracy {accuracy}", file=file)
+        print(f"Accuracy {accuracy.result().numpy()}", file=file)
         print("/" * 60, file=file)
         print("/" * 60, file=file)
 

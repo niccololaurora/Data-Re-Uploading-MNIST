@@ -236,7 +236,7 @@ class MyClass:
             predictions.append(output)
 
         accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
-        accuracy.update_state(self.y_train, predictions)
+        accuracy.update_state(self.y_test, predictions)
 
         return accuracy
 
