@@ -245,6 +245,9 @@ class MyClass:
             output = (exp + 1) / 2
             predictions.append(output)
 
+        accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
+        accuracy.update_state(self.y_train, predictions)
+
         return accuracy
 
     def optimize(self):
