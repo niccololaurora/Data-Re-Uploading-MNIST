@@ -13,17 +13,9 @@ def ask_params():
     return epochs, learning_rate, training_sample, optimizer
 
 
-def write_file(epochs, learning_rate, training_sample, optimizer):
-    with open("parametri.py", "w") as file:
-        file.write(f"epochs = {epochs}\n")
-        file.write(f"learning_rate = {learning_rate}\n")
-        file.write(f"training_sample = {training_sample}\n")
-        file.write(f"optimizer = '{optimizer}'\n")
-
-
 if __name__ == "__main__":
     epochs, learning_rate, training_sample, optimizer = ask_params()
-    write_file(epochs, learning_rate, training_sample, optimizer)
+    optimizer_string = f'"{optimizer}"'
 
     main_file = "main.py"
 
@@ -39,7 +31,13 @@ if __name__ == "__main__":
     main_file_content = main_file_content.replace(
         "training_sample = 0", f"training_sample = {training_sample}"
     )
-    main_file_content = main_file_content.replace("method = 0", f"method = {optimizer}")
+    main_file_content = main_file_content.replace(
+        "method = 0", f"method = {optimizer_string}"
+    )
+
+    # Scrivi il nuovo contenuto nel file
+    with open(main_file, "w") as file:
+        file.write(main_file_content)
 
 
-print("Le informazioni sono state scritte nel file 'parametri.py'.")
+print("Le informazioni sono state scritte nel file 'main.py'.")
