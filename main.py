@@ -20,6 +20,7 @@ def main():
         print(f"Parametri finali {params[0:20]}", file=file)
         print("=" * 60, file=file)
 
+    my_class.plot_metrics()
     accuracy = my_class.test_loop()
 
     with open("file.txt", "a") as file:

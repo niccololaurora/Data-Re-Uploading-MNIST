@@ -12,7 +12,7 @@ class MyClass:
     def __init__(
         self, resize, layers=1, training_sample=5, method="l-bfgs-b", binary="yes"
     ):
-        self.epochs = 100
+        self.epochs = 25
         self.learning_rate = 0.001
         self.train_size = training_sample
         self.x_train = 0
@@ -39,13 +39,13 @@ class MyClass:
     def set_parameters(self, vparams):
         self.vparams = vparams
 
-    def plot_metrics():
+    def plot_metrics(self):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
 
         epochs = np.arange(0, self.epochs, 1)
-        ax[0].plot(epochs, self.loss_history)
-        ax[0].set_title("Mnist")
-        ax[0].set_xlabel("Epochs")
+        ax.plot(epochs, self.loss_history)
+        ax.set_title("Mnist")
+        ax.set_xlabel("Epochs")
 
         plt.savefig("loss.png")
 
