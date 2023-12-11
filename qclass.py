@@ -246,7 +246,7 @@ class MyClass:
             options = {
                 "optimizer": "Adam",
                 "learning_rate": 0.001,
-                "nepochs": 4,
+                "nepochs": self.epochs,
                 "nmessage": 1,
             }
             best, params, extra = optimize(
