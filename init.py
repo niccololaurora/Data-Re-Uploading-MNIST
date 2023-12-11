@@ -13,9 +13,9 @@ def ask_params():
     return epochs, learning_rate, training_sample, optimizer
 
 
-if __name__ == "__main__":
+def main():
     epochs, learning_rate, training_sample, optimizer = ask_params()
-    optimizer_string = f'"{optimizer}"'
+    optimizer_string = f"{optimizer}"
 
     main_file = "main.py"
 
@@ -39,5 +39,8 @@ if __name__ == "__main__":
     with open(main_file, "w") as file:
         file.write(main_file_content)
 
+    print("Le informazioni sono state scritte nel file 'main.py'.")
 
-print("Le informazioni sono state scritte nel file 'main.py'.")
+
+if __name__ == "__main__":
+    main()
