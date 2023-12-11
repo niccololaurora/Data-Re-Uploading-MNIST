@@ -6,15 +6,10 @@ set_backend("tensorflow")
 
 
 def main():
-    epochs = input("Insert epochs: ")
-    learning_rate = input("Insert learning rate: ")
-    training_sample = input("Insert size training sample: ")
-    while True:
-        method = input("Insert optimizer: ")
-        if method.istitle():
-            break
-        else:
-            print("The optimizer must start with a capital letter.")
+    epochs = 0
+    learning_rate = 0
+    training_sample = 0
+    method = 0
 
     my_class = MyClass(
         epochs=epochs,
