@@ -20,6 +20,7 @@ class MyClass:
         self.y_test = 0
         self.block_size = 3
         self.filt = "yes"
+        self.method = "sgd"
         self.binary = binary
         self.resize = resize
         self.vparams = np.random.normal(loc=0, scale=1, size=(198,))
@@ -208,6 +209,8 @@ class MyClass:
 
         predictions = []
         for x in self.x_train:
+            with open("file.txt", "a") as file:
+                print(f"Immagine", file=file)
             """
             The outcome of the circuit will be a number in [-1, 1], hence
             lo traslo in [0, 1].
@@ -220,10 +223,51 @@ class MyClass:
         return cf
 
     def training_loop(self):
-        best, params, extra = optimize(
-            self.loss_function,
-            self.vparams,
-            method="parallel_L-BFGS-B",
-        )
+        for i in range(self.epochs):
+            with open("file.txt", "a") as file:
+                print(f"Epoch {i+1}", file=file)
+            best, params, extra = self.optimize()
+            self.vparams = params
+
+            with open("file.txt", "a") as file:
+                print(f"Parametri finali {self.vparams[0:20]}", file=file)
+
+    def test_loop(self):
+        predictions = []
+        for x in self.x_test:
+            with open("file.txt", "a") as file:
+                print(f"Immagine", file=file)
+            """
+            The outcome of the circuit will be a number in [-1, 1], hence
+            lo traslo in [0, 1].
+            """
+            exp = self.circuit(x)
+            output = (exp + 1) / 2
+            predictions.append(output)
+
+        return accuracy
+
+    def optimize(self):
+        if self.method == "sgd":
+            # perform optimization
+            options = {
+                "optimizer": "Adam",
+                "learning_rate": 0.001,
+                "nepochs": 4,
+                "nmessage": 1,
+            }
+            best, params, extra = optimize(
+                self.loss_function,
+                self.vparams,
+                method="sgd",
+                options=options,
+            )
+
+        else:
+            best, params, extra = optimize(
+                self.loss_function,
+                self.vparams,
+                method="parallel_L-BFGS-B",
+            )
 
         return best, params, extra
