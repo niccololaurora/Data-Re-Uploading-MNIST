@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from qibo.symbols import Z
 from qibo import Circuit, gates, hamiltonians, set_backend
 from qibo.optimizers import optimize
@@ -23,6 +24,7 @@ class MyClass:
         self.method = "sgd"
         self.binary = binary
         self.resize = resize
+        self.loss_history = []
         self.vparams = np.random.normal(loc=0, scale=1, size=(198,))
         self.embed_params = np.random.normal(loc=0, scale=1, size=(162,))
         self.average_params = np.random.normal(loc=0, scale=1, size=(18,))
@@ -36,6 +38,16 @@ class MyClass:
 
     def set_parameters(self, vparams):
         self.vparams = vparams
+
+    def plot_metrics():
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
+
+        epochs = np.arange(0, self.epochs, 1)
+        ax[0].plot(epochs, self.loss_history)
+        ax[0].set_title("Mnist")
+        ax[0].set_xlabel("Epochs")
+
+        plt.savefig("loss.png")
 
     def initialize_data(self):
         (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
@@ -220,6 +232,7 @@ class MyClass:
             predictions.append(output)
 
         cf = tf.keras.losses.BinaryCrossentropy()(self.y_train, predictions)
+        self.loss_history.append(cf)
         return cf
 
     def test_loop(self):
