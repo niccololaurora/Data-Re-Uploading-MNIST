@@ -29,16 +29,13 @@ def main():
         print("=" * 60, file=file)
 
     my_class.initialize_data()
-    best = 0
-    params = 0
-    extra = 0
 
     # Training
     epoch_loss, params, extra = my_class.training_loop()
 
     # Save final parameters
     with open("saved_parameters.pkl", "wb") as f:
-        pickle.dump(self.vparams, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(params, f, pickle.HIGHEST_PROTOCOL)
 
     # Plot training loss
     plot_metrics(epochs, epoch_loss)
