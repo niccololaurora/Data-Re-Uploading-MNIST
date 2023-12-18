@@ -1,4 +1,5 @@
 import os
+import pickle
 from qclass import MyClass
 from qibo import set_backend
 from help_functions import plot_metrics
@@ -34,6 +35,10 @@ def main():
 
     # Training
     epoch_loss, params, extra = my_class.training_loop()
+
+    # Save final parameters
+    with open("saved_parameters.pkl", "wb") as f:
+        pickle.dump(self.vparams, f, pickle.HIGHEST_PROTOCOL)
 
     # Plot training loss
     plot_metrics(epochs, epoch_loss)
