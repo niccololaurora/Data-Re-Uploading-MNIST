@@ -2,6 +2,7 @@ def ask_params():
     epochs = input("Inserisci il numero di epochs: ")
     learning_rate = input("Inserisci il learning rate: ")
     training_sample = input("Inserisci la dimensione del campione di addestramento: ")
+    batch_size = input("Inserisci la batch size: ")
 
     while True:
         optimizer = input("Inserisci l'ottimizzatore: ")
@@ -14,8 +15,7 @@ def ask_params():
 
 
 def main():
-    epochs, learning_rate, training_sample, optimizer = ask_params()
-    optimizer_string = f"{optimizer}"
+    epochs, learning_rate, training_sample, batch_size, optimizer = ask_params()
 
     main_file = "main.py"
 
@@ -32,7 +32,10 @@ def main():
         "training_sample = 0", f"training_sample = {training_sample}"
     )
     main_file_content = main_file_content.replace(
-        "method = 0", f"method = {optimizer_string}"
+        "method = 0", f"method = '{optimizer}'"
+    )
+    main_file_content = main_file_content.replace(
+        "batch_size = 0", f"method = '{batch_size}'"
     )
 
     # Scrivi il nuovo contenuto nel file

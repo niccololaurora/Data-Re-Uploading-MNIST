@@ -34,6 +34,7 @@ with open(new_config_file_path, "w") as file:
 shutil.copy("main.py", result_directory)
 shutil.copy("qclass.py", result_directory)
 shutil.copy("init.py", result_directory)
+shutil.copy("help_functions.py", result_directory)
 
 print(
     f"File di configurazione aggiornato con successo. Job name: {job_name}, Output: {output_log}"
