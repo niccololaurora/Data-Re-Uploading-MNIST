@@ -42,7 +42,7 @@ class MyClass:
         self.resize = resize
         self.layers = layers
         self.nqubits = 9
-        self.number_of_params_1layer = 180
+        self.params_1layer = 180
         self.vparams = np.random.normal(
             loc=0, scale=1, size=(self.params_1layer * self.layers,)
         ).astype(np.complex128)
