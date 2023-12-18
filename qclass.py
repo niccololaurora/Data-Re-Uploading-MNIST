@@ -53,7 +53,6 @@ class MyClass:
         ax.plot(epochs, self.loss_history)
         ax.set_title("Mnist")
         ax.set_xlabel("Epochs")
-
         plt.savefig("loss.png")
 
     def initialize_data(self):
@@ -228,8 +227,6 @@ class MyClass:
 
         predictions = []
         for x in self.x_train:
-            with open("file.txt", "a") as file:
-                print(f"Immagine", file=file)
             """
             The outcome of the circuit will be a number in [-1, 1], hence
             lo traslo in [0, 1].
