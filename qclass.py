@@ -243,7 +243,7 @@ class MyClass:
         res_aver = c_aver(res_cent.state())
 
         # EXPECTATION
-        expectation_value = self.hamiltonian.expectation(res_max.state())
+        expectation_value = self.hamiltonian.expectation(res_aver.state())
         return expectation_value
 
     def loss_function(self, vparams, batch_x, batch_y):
