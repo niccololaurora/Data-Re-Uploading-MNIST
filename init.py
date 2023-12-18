@@ -11,11 +11,17 @@ def ask_params():
         else:
             print("L'ottimizzatore deve iniziare con una lettera maiuscola.")
 
-    return epochs, learning_rate, training_sample, optimizer
+    return epochs, learning_rate, training_sample, optimizer, batch_size
 
 
 def main():
-    epochs, learning_rate, training_sample, batch_size, optimizer = ask_params()
+    (
+        epochs,
+        learning_rate,
+        training_sample,
+        optimizer,
+        batch_size,
+    ) = ask_params()
 
     main_file = "main.py"
 
@@ -35,7 +41,7 @@ def main():
         "method = 0", f"method = '{optimizer}'"
     )
     main_file_content = main_file_content.replace(
-        "batch_size = 0", f"method = '{batch_size}'"
+        "batch_size = 0", f"batch_size = {batch_size}"
     )
 
     # Scrivi il nuovo contenuto nel file

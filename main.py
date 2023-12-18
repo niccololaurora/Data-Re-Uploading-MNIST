@@ -8,11 +8,11 @@ set_backend("tensorflow")
 
 
 def main():
-    epochs = 3
-    learning_rate = 0.1
-    training_sample = 15
-    method = "Adadelta"
-    batch_size = 5
+    epochs = 0
+    learning_rate = 0
+    training_sample = 0
+    method = 0
+    batch_size = 0
 
     my_class = MyClass(
         epochs=epochs,
