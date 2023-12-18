@@ -1,8 +1,9 @@
 def ask_params():
-    epochs = input("Inserisci il numero di epochs: ")
-    learning_rate = input("Inserisci il learning rate: ")
-    training_sample = input("Inserisci la dimensione del campione di addestramento: ")
-    batch_size = input("Inserisci la batch size: ")
+    epochs = input("Number of epochs: ")
+    learning_rate = input("Learning rate: ")
+    training_sample = input("Training size: ")
+    batch_size = input("Batch size: ")
+    layers = input("Number of layers: ")
 
     while True:
         optimizer = input("Inserisci l'ottimizzatore: ")
@@ -11,7 +12,7 @@ def ask_params():
         else:
             print("L'ottimizzatore deve iniziare con una lettera maiuscola.")
 
-    return epochs, learning_rate, training_sample, optimizer, batch_size
+    return epochs, learning_rate, training_sample, optimizer, batch_size, layers
 
 
 def main():
@@ -21,6 +22,7 @@ def main():
         training_sample,
         optimizer,
         batch_size,
+        layers,
     ) = ask_params()
 
     main_file = "main.py"
@@ -30,6 +32,9 @@ def main():
         main_file_content = file.read()
 
     # Sostituisci i valori appropriati nel contenuto del file
+    main_file_content = main_file_content.replace(
+        "method = 0", f"method = '{optimizer}'"
+    )
     main_file_content = main_file_content.replace("epochs = 0", f"epochs = {epochs}")
     main_file_content = main_file_content.replace(
         "learning_rate = 0", f"learning_rate = {learning_rate}"
@@ -38,11 +43,9 @@ def main():
         "training_sample = 0", f"training_sample = {training_sample}"
     )
     main_file_content = main_file_content.replace(
-        "method = 0", f"method = '{optimizer}'"
-    )
-    main_file_content = main_file_content.replace(
         "batch_size = 0", f"batch_size = {batch_size}"
     )
+    main_file_content = main_file_content.replace("layers = 0", f"layers = {layers}")
 
     # Scrivi il nuovo contenuto nel file
     with open(main_file, "w") as file:
