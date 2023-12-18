@@ -10,6 +10,9 @@ from help_functions import batch_data, calculate_batches
 
 set_backend("tensorflow")
 
+# embedding 162
+# Pooling 18
+
 
 class MyClass:
     def __init__(
@@ -37,9 +40,12 @@ class MyClass:
         self.filt = "yes"
         self.method = method
         self.resize = resize
-        self.vparams = np.random.normal(loc=0, scale=1, size=(198,)).astype(
-            np.complex128
-        )
+        self.layers = layers
+        self.nqubits = 9
+        self.number_of_params_1layer = 180
+        self.vparams = np.random.normal(
+            loc=0, scale=1, size=(self.params_1layer * self.layers,)
+        ).astype(np.complex128)
         # self.embed_params = np.random.normal(loc=0, scale=1, size=(162,))
         # self.average_params = np.random.normal(loc=0, scale=1, size=(18,))
         # self.max_params = np.random.normal(loc=0, scale=1, size=(18,))
@@ -107,25 +113,31 @@ class MyClass:
             sizes_batches,
         )
 
-    def average_block(self, simple_list):
+    def average_block(self, simple_list, k):
         """
         Args: list of 9 values
         Return: circuit with embedded this 9 values
         """
         c = Circuit(9)
         for q, value in enumerate(simple_list):
-            rx = self.vparams[q * 2 + 162] * value + self.vparams[(q * 2 + 1) + 162]
+            rx = (
+                self.vparams[(q * 2) + k * self.params_1layer] * value
+                + self.vparams[(q * 2 + 1) + k * self.params_1layer]
+            )
             c.add(gates.RX(q, theta=rx))
         return c
 
-    def max_block(self, simple_list):
+    def max_block(self, simple_list, k):
         """
         Args: list of 9 values
         Return: circuit with embedded this 9 values
         """
         c = Circuit(9)
         for q, value in enumerate(simple_list):
-            rx = self.vparams[q * 2 + 180] * value + self.vparams[(q * 2 + 1) + 180]
+            rx = (
+                self.vparams[(q * 2) + k * self.params_1layer] * value
+                + self.vparams[(q * 2 + 1) + k * self.params_1layer]
+            )
             c.add(gates.RX(q, theta=rx))
         return c
 
@@ -142,20 +154,29 @@ class MyClass:
         c.add(gates.CNOT(8, 0))
         return c
 
-    def embedding_block(self, blocks):
+    def embedding_block(self, blocks, k):
         """
         Args: an image divided in blocks (9 blocks 3x3)
         Return: a qibo circuit with the embedded image
         """
         c = Circuit(9)
-        for k, block in enumerate(blocks):
+        for j, block in enumerate(blocks):
             for i, x in enumerate(block):
-                ry_0 = self.vparams[i * 6] * x[0] + self.vparams[i * 6 + 1]
-                rz_1 = self.vparams[i * 6 + 2] * x[1] + self.vparams[i * 6 + 3]
-                ry_2 = self.vparams[i * 6 + 4] * x[2] + self.vparams[i * 6 + 5]
-                c.add(gates.RY(k, theta=ry_0))
-                c.add(gates.RZ(k, theta=rz_1))
-                c.add(gates.RY(k, theta=ry_2))
+                ry_0 = (
+                    self.vparams[(i * 6) + k * self.params_1layer] * x[0]
+                    + self.vparams[(i * 6 + 1) + k * self.params_1layer]
+                )
+                rz_1 = (
+                    self.vparams[(i * 6 + 2) + k * self.params_1layer] * x[1]
+                    + self.vparams[(i * 6 + 3) + k * self.params_1layer]
+                )
+                ry_2 = (
+                    self.vparams[(i * 6 + 4) + k * self.params_1layer] * x[2]
+                    + self.vparams[(i * 6 + 5) + k * self.params_1layer]
+                )
+                c.add(gates.RY(j, theta=ry_0))
+                c.add(gates.RZ(j, theta=rz_1))
+                c.add(gates.RY(j, theta=ry_2))
 
         return c
 
@@ -210,37 +231,33 @@ class MyClass:
         # Suddivido l'immagine 9x9 in 9 blocchi 3x3 (appiattiti)
         blocks = self.block_creator(x)
 
-        # EMBEDDING
-        c_em = self.embedding_block(blocks)
-        res_cem = c_em()
-
-        # ENTANGLEMENT
-        c_ent = self.entanglement_block()
-        res_cent = c_ent(res_cem.state())
-
-        # AVERAGE
+        # Average pooling of each block
         average_pooling_values = self.average_pooling(blocks)
-        c_aver = self.average_block(average_pooling_values)
-        res_aver = c_aver(res_cent.state())
 
-        # ENTANGLEMENT
-        res_cent = c_ent(res_aver.state())
+        # Entanglement block
+        c_ent = self.entanglement_block()
 
-        # MAX POOLING
-        """
-        max_pooling_values = self.max_pooling(blocks)
-        c_max = self.max_block(max_pooling_values)
-        res_max = c_max(res_aver.state())
-        """
-        # EMBEDDING 2
-        res_cem = c_em(res_cent.state())
+        # Initial state
+        tensor_size = 2**self.nqubits
+        tensor_values = [1] + [0] * (tensor_size - 1)
+        initial_state = tf.constant(tensor_values, dtype=tf.float32)
+        for k in range(self.layers):
+            # EMBEDDING
+            c_em = self.embedding_block(blocks, k)
+            res_cem = c_em(initial_state)
 
-        # ENTANGLEMENT
-        res_cent = c_ent(res_cem.state())
+            # ENTANGLEMENT
+            res_cent = c_ent(res_cem.state())
 
-        # AVERAGE 2
-        c_aver = self.average_block(average_pooling_values)
-        res_aver = c_aver(res_cent.state())
+            # AVERAGE POOLING
+            c_aver = self.average_block(average_pooling_values, k)
+            res_aver = c_aver(res_cent.state())
+
+            if k == self.layers - 1:
+                break
+            # ENTANGLEMENT
+            res_cent = c_ent(res_aver.state())
+            initial_state = res_cent.state()
 
         # EXPECTATION
         expectation_value = self.hamiltonian.expectation(res_aver.state())

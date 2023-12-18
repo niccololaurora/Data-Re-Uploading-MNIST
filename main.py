@@ -13,6 +13,7 @@ def main():
     training_sample = 0
     method = 0
     batch_size = 0
+    layers = 2
 
     my_class = MyClass(
         epochs=epochs,
@@ -20,6 +21,7 @@ def main():
         training_sample=training_sample,
         method=method,
         batch_size=batch_size,
+        layers=layers,
     )
 
     vparams = my_class.get_parameters()
