@@ -6,6 +6,7 @@ from qibo.symbols import Z
 from qibo import Circuit, gates, hamiltonians, set_backend
 from qibo.optimizers import optimize
 
+
 set_backend("tensorflow")
 
 
@@ -28,6 +29,7 @@ class MyClass:
         self.x_test = 0
         self.y_test = 0
         self.block_size = 3
+        self.size_batch = 32
         self.filt = "yes"
         self.method = method
         self.resize = resize
@@ -91,6 +93,8 @@ class MyClass:
         self.y_train = y_train
         self.x_test = x_test
         self.y_test = y_test
+
+        return x_train, y_train
 
     def average_block(self, simple_list):
         """
@@ -220,13 +224,13 @@ class MyClass:
         expectation_value = self.hamiltonian.expectation(res_max.state())
         return expectation_value
 
-    def loss_function(self, vparams=None):
+    def loss_function(self, x_train, y_train, vparams=None):
         if vparams is None:
             vparams = self.vparams
         self.set_parameters(vparams)
 
         predictions = []
-        for x in self.x_train:
+        for x in x_train:
             """
             The outcome of the circuit will be a number in [-1, 1], hence
             lo traslo in [0, 1].
@@ -235,15 +239,13 @@ class MyClass:
             output = (exp + 1) / 2
             predictions.append(output)
 
-        cf = tf.keras.losses.BinaryCrossentropy()(self.y_train, predictions)
+        cf = tf.keras.losses.BinaryCrossentropy()(y_train, predictions)
         self.loss_history.append(cf)
         return cf
 
     def test_loop(self):
         predictions = []
         for x in self.x_test:
-            with open("file.txt", "a") as file:
-                print(f"Immagine", file=file)
             """
             The outcome of the circuit will be a number in [-1, 1], hence
             lo traslo in [0, 1].
@@ -257,18 +259,19 @@ class MyClass:
 
         return accuracy
 
-    def training_loop(self):
+    def training_loop(self, x, y):
         if self.method == "sgd":
             # perform optimization
             options = {
                 "optimizer": self.method,
                 "learning_rate": self.learning_rate,
-                "nepochs": self.epochs,
+                "nepochs": 1,
                 "nmessage": 5,
             }
             best, params, extra = optimize(
                 self.loss_function,
                 self.vparams,
+                args=(x, y),
                 method="sgd",
                 options=options,
             )
@@ -277,6 +280,7 @@ class MyClass:
             best, params, extra = optimize(
                 self.loss_function,
                 self.vparams,
+                args=(x, y),
                 method="parallel_L-BFGS-B",
             )
 
