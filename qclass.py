@@ -136,10 +136,10 @@ class MyClass:
         """
         c = Circuit(9)
         for q in range(0, 8, 2):
-            c.add(gates.CZ(q, q + 1))
+            c.add(gates.CNOT(q, q + 1))
         for q in range(1, 7, 2):
-            c.add(gates.CZ(q, q + 1))
-        c.add(gates.CZ(0, 8))
+            c.add(gates.CNOT(q, q + 1))
+        c.add(gates.CNOT(8, 0))
         return c
 
     def embedding_block(self, blocks):
@@ -227,9 +227,20 @@ class MyClass:
         res_cent = c_ent(res_aver.state())
 
         # MAX POOLING
+        """
         max_pooling_values = self.max_pooling(blocks)
         c_max = self.max_block(max_pooling_values)
         res_max = c_max(res_aver.state())
+        """
+        # EMBEDDING 2
+        res_cem = c_em(res_cent.state())
+
+        # ENTANGLEMENT
+        res_cent = c_ent(res_cem.state())
+
+        # AVERAGE 2
+        c_aver = self.average_block(average_pooling_values)
+        res_aver = c_aver(res_cent.state())
 
         # EXPECTATION
         expectation_value = self.hamiltonian.expectation(res_max.state())
