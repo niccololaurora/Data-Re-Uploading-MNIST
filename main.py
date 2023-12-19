@@ -9,12 +9,12 @@ set_backend("tensorflow")
 
 def main():
     nome_file = "epochs.txt"
-    epochs = 0
-    learning_rate = 0
-    training_sample = 0
-    method = 0
-    batch_size = 0
-    layers = 0
+    epochs = 2
+    learning_rate = 0.1
+    training_sample = 100
+    method = "Adam"
+    batch_size = 5
+    layers = 2
 
     my_class = MyClass(
         epochs=epochs,
@@ -34,6 +34,9 @@ def main():
 
     # Initialize data
     my_class.initialize_data()
+
+    # Barplot
+    my_class.barplot()
 
     # Training
     epoch_train_loss, epoch_validation_loss, params, epochs = my_class.training_loop()

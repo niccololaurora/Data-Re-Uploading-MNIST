@@ -131,6 +131,51 @@ class MyClass:
             sizes_batches,
         )
 
+    def barplot(self):
+        # Counting zeros and ones in each dataset
+        train_zeros = np.sum(self.y_train == 0)
+        train_ones = np.sum(self.y_train == 1)
+
+        test_zeros = np.sum(self.y_test == 0)
+        test_ones = np.sum(self.y_test == 1)
+
+        validation_zeros = np.sum(self.y_validation == 0)
+        validation_ones = np.sum(self.y_validation == 1)
+
+        # Labels for the bars
+        labels = ["Zeros", "Ones"]
+
+        # Heights of the bars
+        train_heights = [train_zeros, train_ones]
+        test_heights = [test_zeros, test_ones]
+        validation_heights = [validation_zeros, validation_ones]
+
+        # Bar width
+        bar_width = 0.35
+
+        # Creating bar plots
+        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(12, 5))
+        ax[0].bar(
+            np.arange(len(labels)), train_heights, bar_width, label="Training Set"
+        )
+        ax[1].bar(np.arange(len(labels)), test_heights, bar_width, label="Test Set")
+        ax[2].bar(
+            np.arange(len(labels)),
+            validation_heights,
+            bar_width,
+            label="Validation Set",
+        )
+
+        # Adding labels and legend
+        for axis, title in zip(ax, ["Training Set", "Test Set", "Validation Set"]):
+            axis.set_xticks(np.arange(len(labels)))
+            axis.set_xticklabels(labels)
+            axis.set_ylabel("Number of Images")
+            axis.set_title(title)
+
+        # Display the bar plots
+        plt.savefig("statistics.png")
+
     def average_block(self, simple_list, k):
         """
         Args: list of 9 values
