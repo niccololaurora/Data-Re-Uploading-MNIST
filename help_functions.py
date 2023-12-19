@@ -38,11 +38,11 @@ def calculate_batches(x_train, batch_size):
     return number_of_batches, sizes_batches
 
 
-def plot_metrics(nepochs, loss_history):
+def plot_metrics(nepochs, loss_history, method):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
 
     epochs = np.arange(0, nepochs, 1)
     ax.plot(epochs, loss_history)
-    ax.set_title("Mnist")
+    ax.set_title(method)
     ax.set_xlabel("Epochs")
     plt.savefig("loss.png")

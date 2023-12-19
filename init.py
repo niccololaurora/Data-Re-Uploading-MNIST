@@ -6,11 +6,11 @@ def ask_params():
     layers = input("Number of layers: ")
 
     while True:
-        optimizer = input("Inserisci l'ottimizzatore: ")
+        optimizer = input("Optimizer: ")
         if optimizer.istitle():
             break
         else:
-            print("L'ottimizzatore deve iniziare con una lettera maiuscola.")
+            print("The name of the optimizer must start with a capital letter.")
 
     return epochs, learning_rate, training_sample, optimizer, batch_size, layers
 
@@ -51,7 +51,7 @@ def main():
     with open(main_file, "w") as file:
         file.write(main_file_content)
 
-    print("Le informazioni sono state scritte nel file 'main.py'.")
+    print("Informations written in 'main.py'.")
 
 
 if __name__ == "__main__":

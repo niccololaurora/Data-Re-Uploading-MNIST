@@ -40,7 +40,7 @@ def main():
         pickle.dump(params, f, pickle.HIGHEST_PROTOCOL)
 
     # Plot training loss
-    plot_metrics(epochs, epoch_loss)
+    plot_metrics(epochs, epoch_loss, method)
 
     # Test loop
     accuracy = my_class.test_loop()
