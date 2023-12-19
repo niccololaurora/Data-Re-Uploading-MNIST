@@ -376,16 +376,11 @@ class MyClass:
                     )
                     batch_train_loss.append(best)
 
-                    with open(self.nome_file, "a") as file:
-                        print("/" * 60, file=file)
-                        print(f"Batch {k+1}", file=file)
-                        print(f"Parametri:\n{params[0:20]}", file=file)
-                        print("/" * 60, file=file)
-
+                # Loss training
                 e_train_loss = sum(batch_train_loss) / len(batch_train_loss)
                 epoch_train_loss.append(e_train_loss)
 
-                # Validation
+                # Loss Validation
                 validation_loss = self.validation_loop()
                 epoch_validation_loss.append(validation_loss)
 
