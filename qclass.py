@@ -22,12 +22,15 @@ class MyClass:
         training_sample,
         method,
         batch_size,
+        nome_file,
         layers=1,
         resize=9,
     ):
+        self.nome_file = nome_file
+        self.epochs_early_stopping = epochs
         self.epochs = epochs
         self.method = method
-        self.patience = 3
+        self.patience = 10
         self.tolerance = 1e-4
         self.learning_rate = learning_rate
         self.train_size = training_sample
@@ -293,9 +296,12 @@ class MyClass:
             else:
                 epochs_without_improvement += 1
 
-            # Verifica se interrompere l'addestramento
             if epochs_without_improvement >= self.patience:
-                print(f"Early stopping at epoch {epoch + 1}.")
+                with open(self.nome_file, "a") as file:
+                    print(">" * 60, file=file)
+                    print(f"Early stopping at epoch {epoch + 1}.")
+                    print(">" * 60, file=file)
+                self.epochs_early_stopping = epoch + 1
                 return True
 
         return False
@@ -355,7 +361,7 @@ class MyClass:
             epoch_validation_loss = []
             early_stopping = []
             for i in range(self.epochs):
-                with open("epochs.txt", "a") as file:
+                with open(self.nome_file, "a") as file:
                     print("=" * 60, file=file)
                     print(f"Epoch {i+1}", file=file)
 
@@ -370,7 +376,7 @@ class MyClass:
                     )
                     batch_train_loss.append(best)
 
-                    with open("epochs.txt", "a") as file:
+                    with open(self.nome_file, "a") as file:
                         print("/" * 60, file=file)
                         print(f"Batch {k+1}", file=file)
                         print(f"Parametri:\n{params[0:20]}", file=file)
@@ -383,9 +389,15 @@ class MyClass:
                 validation_loss = self.validation_loop()
                 epoch_validation_loss.append(validation_loss)
 
+                with open(self.nome_file, "a") as file:
+                    print("/" * 60, file=file)
+                    print(f"Loss training set: {e_train_loss}", file=file)
+                    print(f"Loss validation set: {validation_loss}", file=file)
+                    print("/" * 60, file=file)
+
                 # Early Stopping
                 if self.early_stopping(epoch_train_loss, epoch_validation_loss) == True:
-                    with open("epochs.txt", "a") as file:
+                    with open(self.nome_file, "a") as file:
                         print("=" * 60, file=file)
                         print(f"Parametri finali:\n{params[0:20]}", file=file)
                         print("=" * 60, file=file)
@@ -398,4 +410,9 @@ class MyClass:
                 method="parallel_L-BFGS-B",
             )
 
-        return epoch_train_loss, epoch_validation_loss, params, extra
+        return (
+            epoch_train_loss,
+            epoch_validation_loss,
+            params,
+            self.epochs_early_stopping,
+        )
