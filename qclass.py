@@ -27,14 +27,12 @@ class MyClass:
     ):
         self.epochs = epochs
         self.method = method
-        self.patience = (
-            3  # Numero massimo di epoche senza miglioramenti sulla loss di validazione
-        )
+        self.patience = 3
         self.tolerance = 1e-4
         self.learning_rate = learning_rate
         self.train_size = training_sample
         self.test_size = training_sample
-        self.validation_size = int(training_sample / 2)
+        self.validation_split = 0.2
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
@@ -87,14 +85,14 @@ class MyClass:
         if self.train_size != 0:
             x_train = x_train[0 : self.train_size]
             y_train = y_train[0 : self.train_size]
+            validation_size = int(len(x_train) * self.validation_split)
+
+            x_validation = x_train[:validation_size]
+            y_validation = y_train[:validation_size]
+            x_train = x_train[validation_size:]
+            y_train = y_train[validation_size:]
             x_test = x_test[0 : self.test_size]
             y_test = y_test[0 : self.test_size]
-            x_validation = x_train[
-                self.train_size + 1 : (self.train_size + 1) + self.validation_size
-            ]
-            y_validation = y_train[
-                self.train_size + 1 : (self.train_size + 1) + self.validation_size
-            ]
 
         # Resize images
         width, length = self.resize, self.resize
@@ -289,14 +287,14 @@ class MyClass:
             validation_loss = validation_loss_history[epoch]
 
             # Verifica se la loss di validazione ha migliorato
-            if validation_loss < best_validation_loss - tolerance:
+            if validation_loss < best_validation_loss - self.tolerance:
                 best_validation_loss = validation_loss
                 epochs_without_improvement = 0
             else:
                 epochs_without_improvement += 1
 
             # Verifica se interrompere l'addestramento
-            if epochs_without_improvement >= patience:
+            if epochs_without_improvement >= self.patience:
                 print(f"Early stopping at epoch {epoch + 1}.")
                 return True
 
@@ -379,7 +377,7 @@ class MyClass:
                         print("/" * 60, file=file)
 
                 e_train_loss = sum(batch_train_loss) / len(batch_train_loss)
-                epoch_train_loss.append(e_loss)
+                epoch_train_loss.append(e_train_loss)
 
                 # Validation
                 validation_loss = self.validation_loop()
@@ -400,4 +398,4 @@ class MyClass:
                 method="parallel_L-BFGS-B",
             )
 
-        return epoch_loss, params, extra
+        return epoch_train_loss, epoch_validation_loss, params, extra

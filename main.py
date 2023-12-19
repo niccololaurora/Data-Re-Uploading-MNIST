@@ -33,14 +33,14 @@ def main():
     my_class.initialize_data()
 
     # Training
-    epoch_loss, params, extra = my_class.training_loop()
+    epoch_train_loss, epoch_validation_loss, params, extra = my_class.training_loop()
 
     # Save final parameters
     with open("saved_parameters.pkl", "wb") as f:
         pickle.dump(params, f, pickle.HIGHEST_PROTOCOL)
 
     # Plot training loss
-    plot_metrics(epochs, epoch_loss, method)
+    plot_metrics(epochs, epoch_train_loss, method, epoch_validation_loss)
 
     # Test loop
     accuracy = my_class.test_loop()
