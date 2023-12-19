@@ -27,12 +27,20 @@ class MyClass:
     ):
         self.epochs = epochs
         self.method = method
+        self.patience = (
+            3  # Numero massimo di epoche senza miglioramenti sulla loss di validazione
+        )
+        self.tolerance = 1e-4
         self.learning_rate = learning_rate
         self.train_size = training_sample
+        self.test_size = training_sample
+        self.validation_size = int(training_sample / 2)
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
         self.y_test = 0
+        self.x_validation = 0
+        self.y_validation = 0
         self.batch_x = 0
         self.batch_y = 0
         self.block_size = 3
@@ -79,28 +87,37 @@ class MyClass:
         if self.train_size != 0:
             x_train = x_train[0 : self.train_size]
             y_train = y_train[0 : self.train_size]
-            x_test = x_test[self.train_size + 1 : (self.train_size + 1) * 2]
-            y_test = y_test[self.train_size + 1 : (self.train_size + 1) * 2]
+            x_test = x_test[0 : self.test_size]
+            y_test = y_test[0 : self.test_size]
+            x_validation = x_train[
+                self.train_size + 1 : (self.train_size + 1) + self.validation_size
+            ]
+            y_validation = y_train[
+                self.train_size + 1 : (self.train_size + 1) + self.validation_size
+            ]
 
         # Resize images
         width, length = self.resize, self.resize
-        # x_train = tf.convert_to_tensor(x_train, dtype=tf.float32)
-        # x_test = tf.convert_to_tensor(x_test, dtype=tf.float32)
 
         x_train = tf.expand_dims(x_train, axis=-1)
         x_test = tf.expand_dims(x_test, axis=-1)
+        x_validation = tf.expand_dims(x_validation, axis=-1)
 
         x_train = tf.image.resize(x_train, [width, length])
         x_test = tf.image.resize(x_test, [width, length])
+        x_validation = tf.image.resize(x_validation, [width, length])
 
         # Normalize pixel values to be between 0 and 1
         x_train = x_train / 255.0
         x_test = x_test / 255.0
+        x_validation = x_validation / 255.0
 
         self.x_train = x_train
         self.y_train = y_train
         self.x_test = x_test
         self.y_test = y_test
+        self.x_validation = x_validation
+        self.y_validation = y_validation
 
         # Batching
         number_of_batches, sizes_batches = calculate_batches(
@@ -263,6 +280,28 @@ class MyClass:
         expectation_value = self.hamiltonian.expectation(res_aver.state())
         return expectation_value
 
+    def early_stopping(self, training_loss_history, validation_loss_history):
+        best_validation_loss = np.inf
+        epochs_without_improvement = 0
+
+        for epoch in range(len(training_loss_history)):
+            training_loss = training_loss_history[epoch]
+            validation_loss = validation_loss_history[epoch]
+
+            # Verifica se la loss di validazione ha migliorato
+            if validation_loss < best_validation_loss - tolerance:
+                best_validation_loss = validation_loss
+                epochs_without_improvement = 0
+            else:
+                epochs_without_improvement += 1
+
+            # Verifica se interrompere l'addestramento
+            if epochs_without_improvement >= patience:
+                print(f"Early stopping at epoch {epoch + 1}.")
+                return True
+
+        return False
+
     def loss_function(self, vparams, batch_x, batch_y):
         if vparams is None:
             vparams = self.vparams
@@ -297,6 +336,16 @@ class MyClass:
 
         return accuracy
 
+    def validation_loop(self):
+        predictions = []
+        for x in self.x_validation:
+            exp = self.circuit(x)
+            output = (exp + 1) / 2
+            predictions.append(output)
+
+        cf = tf.keras.losses.BinaryCrossentropy()(self.y_validation, predictions)
+        return cf
+
     def training_loop(self):
         if (
             (self.method == "Adadelta")
@@ -304,13 +353,15 @@ class MyClass:
             or (self.method == "Adam")
         ):
             best, params, extra = 0, 0, 0
-            epoch_loss = []
+            epoch_train_loss = []
+            epoch_validation_loss = []
+            early_stopping = []
             for i in range(self.epochs):
                 with open("epochs.txt", "a") as file:
                     print("=" * 60, file=file)
                     print(f"Epoch {i+1}", file=file)
 
-                batch_loss = []
+                batch_train_loss = []
                 for k in range(len(self.batch_x)):
                     best, params, extra = optimize(
                         self.loss_function,
@@ -319,7 +370,7 @@ class MyClass:
                         method="sgd",
                         options=self.options,
                     )
-                    batch_loss.append(best)
+                    batch_train_loss.append(best)
 
                     with open("epochs.txt", "a") as file:
                         print("/" * 60, file=file)
@@ -327,13 +378,20 @@ class MyClass:
                         print(f"Parametri:\n{params[0:20]}", file=file)
                         print("/" * 60, file=file)
 
-                e_loss = sum(batch_loss) / len(batch_loss)
-                epoch_loss.append(e_loss)
+                e_train_loss = sum(batch_train_loss) / len(batch_train_loss)
+                epoch_train_loss.append(e_loss)
 
-            with open("epochs.txt", "a") as file:
-                print("=" * 60, file=file)
-                print(f"Parametri finali:\n{params[0:20]}", file=file)
-                print("=" * 60, file=file)
+                # Validation
+                validation_loss = self.validation_loop()
+                epoch_validation_loss.append(validation_loss)
+
+                # Early Stopping
+                if self.early_stopping(epoch_train_loss, epoch_validation_loss) == True:
+                    with open("epochs.txt", "a") as file:
+                        print("=" * 60, file=file)
+                        print(f"Parametri finali:\n{params[0:20]}", file=file)
+                        print("=" * 60, file=file)
+                    break
 
         else:
             best, params, extra = optimize(

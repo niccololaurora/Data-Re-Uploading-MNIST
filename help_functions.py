@@ -38,11 +38,16 @@ def calculate_batches(x_train, batch_size):
     return number_of_batches, sizes_batches
 
 
-def plot_metrics(nepochs, loss_history, method):
+def plot_metrics(nepochs, train_loss_history, method, validation_loss_history=None):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
 
     epochs = np.arange(0, nepochs, 1)
-    ax.plot(epochs, loss_history)
+    ax.plot(epochs, train_loss_history, label="Train Loss")
+
+    if validation_loss_history is not None:
+        ax.plot(epochs, validation_loss_history, label="Validation Loss")
+
     ax.set_title(method)
+    ax.legend()
     ax.set_xlabel("Epochs")
     plt.savefig("loss.png")
