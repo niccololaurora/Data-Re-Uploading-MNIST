@@ -30,8 +30,8 @@ class MyClass:
         resize=9,
     ):
         np.random.seed(seed_value)
-        self.nome_barplot = (nome_barplot,)
-        self.nome_file = (nome_file,)
+        self.nome_barplot = nome_barplot
+        self.nome_file = nome_file
         self.name_predictions = name_predictions
         self.epochs_early_stopping = epochs
         self.epochs = epochs
@@ -382,7 +382,7 @@ class MyClass:
         accuracy.update_state(self.y_test, predictions)
 
         name = self.name_predictions + f"_{correction_name}_.png"
-        plot_predictions(5, 5, predictions, self.x_test, self.y_test)
+        plot_predictions(5, 5, predictions, self.x_test, self.y_test, name)
 
         return accuracy
 

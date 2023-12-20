@@ -1,5 +1,6 @@
 import os
 import pickle
+import numpy as np
 from qclass import MyClass
 from qibo import set_backend
 from help_functions import plot_metrics
@@ -13,18 +14,35 @@ def main():
     training_sample = 200
     method = "Adam"
     batch_size = 20
-    layers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    layers = [1, 2, 3, 4, 5, 6, 7, 8]
     seed = 0
 
-    for layer in layers:
-        accuracy = []
+    nome_barplot = "barplot.png"
+    accuracy = []
+    for j in range(len(layers)):
+        print("=" * 60)
+        print("=" * 60)
+        print(f"Layer = {layers[j]}")
+        print("=" * 60)
+        print("=" * 60)
+        accuracy_layer = []
         for i in range(10):
-            nome_file = f"layer_{layer}_" + f"rep_{i}" + "_.txt"
-            nome_barplot = f"barplot_layer_{layer}_" + f"rep_{i}" + "_.png"
-            name_metrics = f"loss_layer_{layer}_" + f"rep_{i}" + "_.png"
-            name_params = f"params_layer_{layer}_" + f"rep_{i}" + "_.pkl"
-            name_predictions = f"predictions"
+            print("/" * 60)
+            print("/" * 60)
+            print(f"Trial = {i}")
+            print("/" * 60)
+            print("/" * 60)
+
+            # Nome files
+            nome_file = f"layer_{layers[j]}_" + f"rep_{i}" + "_.txt"
+            name_metrics = f"loss_layer_{layers[j]}_" + f"rep_{i}" + "_.png"
+            name_params = f"params_layer_{layers[j]}_" + f"rep_{i}" + "_.pkl"
+            name_predictions = f"predictions_layer_{layers[j]}_" + f"rep_{i}_"
+
+            # Update seed
             seed += 1
+
+            # Create class
             my_class = MyClass(
                 epochs=epochs,
                 learning_rate=learning_rate,
@@ -33,8 +51,8 @@ def main():
                 batch_size=batch_size,
                 nome_file=nome_file,
                 nome_barplot=nome_barplot,
-                name_loss=name_metrics,
-                layers=layers,
+                name_predictions=name_predictions,
+                layers=layers[j],
                 seed_value=seed,
             )
 
@@ -46,6 +64,12 @@ def main():
 
             # Test loop before training
             acc = my_class.test_loop("before")
+            with open(nome_file, "a") as file:
+                print("/" * 60, file=file)
+                print("/" * 60, file=file)
+                print(f"Accuracy test set (before): {acc.result().numpy()}", file=file)
+                print("/" * 60, file=file)
+                print("/" * 60, file=file)
 
             # Training loop
             (
@@ -62,7 +86,7 @@ def main():
 
             # Test loop after training
             acc = my_class.test_loop("after")
-            accuracy.append(acc)
+            accuracy_layer.append(acc.result().numpy())
 
             # Save final parameters
             with open(name_params, "wb") as f:
@@ -72,9 +96,24 @@ def main():
             with open(nome_file, "a") as file:
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
-                print(f"Accuracy test set: {accuracy.result().numpy()}", file=file)
+                print(f"Accuracy test set (after): {acc.result().numpy()}", file=file)
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
+
+        # Calculate accuracy and deviation std
+        acc = sum(accuracy_layer) / len(accuracy_layer)
+        sigma_acc = np.std(accuracy_layer)
+        dict_acc = {"Accuracy": acc, "Deviazione Standard": sigma_acc}
+        accuracy.append(dict_acc)
+
+    # Final summary of accuracies
+    with open("summary.txt", "a") as file:
+        for i, acc_dict in enumerate(accuracy):
+            print("/" * 60, file=file)
+            print("/" * 60, file=file)
+            for key, value in acc_dict.items():
+                print(f"Number of layers: {i}", file=file)
+                print(f"{key}: {value}", file=file)
 
 
 if __name__ == "__main__":
