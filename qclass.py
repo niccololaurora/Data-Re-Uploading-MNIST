@@ -379,6 +379,15 @@ class MyClass:
         accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
         accuracy.update_state(self.y_test, predictions)
 
+        # Printo le prime 5 immagini
+        fig, ax = plt.subplots(nrows=1, ncols=5, figsize=(12, 5))
+
+        for i in range(6):
+            ax[i].imshow(self.x_test[i])
+            ax[i].set_title(f"Prediction {predictions[i]}")
+
+        plt.savefig("fig.png")
+
         return accuracy
 
     def validation_loop(self):
