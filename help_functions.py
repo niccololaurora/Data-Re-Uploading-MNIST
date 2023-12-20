@@ -38,7 +38,9 @@ def calculate_batches(x_train, batch_size):
     return number_of_batches, sizes_batches
 
 
-def plot_metrics(nepochs, train_loss_history, method, validation_loss_history=None):
+def plot_metrics(
+    nepochs, train_loss_history, method, name_metrics, validation_loss_history=None
+):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
 
     epochs = np.arange(0, nepochs, 1)
@@ -50,4 +52,23 @@ def plot_metrics(nepochs, train_loss_history, method, validation_loss_history=No
     ax.set_title(method)
     ax.legend()
     ax.set_xlabel("Epochs")
-    plt.savefig("loss.png")
+    plt.savefig(name_metrics)
+
+
+def plot_predictions(rows, columns, predictions, x_data, y_data, name):
+    fig, ax = plt.subplots(nrows=rows, ncols=columns, figsize=(12, 12))
+
+    for i in range(rows):
+        for j in range(columns):
+            rounded_prediction = round(predictions[i + j], 2)
+            ax[i][j].imshow(x_data[i + j], cmap="gray")
+
+            is_correct = (predictions[i + j] >= 0.5 and y_data[i + j] == 1) or (
+                predictions[i + j] < 0.5 and y_data[i + j] == 0
+            )
+            title_color = "green" if is_correct else "red"
+            ax[i][j].set_title(f"Prediction: {rounded_prediction}", color=title_color)
+            ax[i][j].set_xticks([])
+            ax[i][j].set_yticks([])
+
+    plt.savefig(name)

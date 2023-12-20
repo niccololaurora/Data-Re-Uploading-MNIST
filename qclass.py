@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from qibo.symbols import Z
 from qibo import Circuit, gates, hamiltonians, set_backend
 from qibo.optimizers import optimize
-from help_functions import batch_data, calculate_batches
+from help_functions import batch_data, calculate_batches, plot_predictions
 
 
 set_backend("tensorflow")
@@ -23,10 +23,16 @@ class MyClass:
         method,
         batch_size,
         nome_file,
+        seed_value,
+        nome_barplot,
+        name_predictions,
         layers=1,
         resize=9,
     ):
-        self.nome_file = nome_file
+        np.random.seed(seed_value)
+        self.nome_barplot = (nome_barplot,)
+        self.nome_file = (nome_file,)
+        self.name_predictions = name_predictions
         self.epochs_early_stopping = epochs
         self.epochs = epochs
         self.method = method
@@ -55,9 +61,6 @@ class MyClass:
         self.vparams = np.random.normal(
             loc=0, scale=1, size=(self.params_1layer * self.layers,)
         ).astype(np.complex128)
-        # self.embed_params = np.random.normal(loc=0, scale=1, size=(162,))
-        # self.average_params = np.random.normal(loc=0, scale=1, size=(18,))
-        # self.max_params = np.random.normal(loc=0, scale=1, size=(18,))
         self.hamiltonian = hamiltonians.SymbolicHamiltonian(
             Z(0) * Z(1) * Z(2) * Z(3) * Z(4) * Z(5) * Z(6) * Z(7) * Z(8)
         )
@@ -173,8 +176,7 @@ class MyClass:
             axis.set_ylabel("Number of Images")
             axis.set_title(title)
 
-        # Display the bar plots
-        plt.savefig("statistics.png")
+        plt.savefig(self.nome_barplot)
 
     def average_block(self, simple_list, k):
         """
@@ -369,7 +371,7 @@ class MyClass:
         cf = tf.keras.losses.BinaryCrossentropy()(batch_y, predictions)
         return cf
 
-    def test_loop(self):
+    def test_loop(self, correction_name):
         predictions = []
         for x in self.x_test:
             exp = self.circuit(x)
@@ -379,14 +381,8 @@ class MyClass:
         accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
         accuracy.update_state(self.y_test, predictions)
 
-        # Printo le prime 5 immagini
-        fig, ax = plt.subplots(nrows=1, ncols=5, figsize=(12, 5))
-
-        for i in range(6):
-            ax[i].imshow(self.x_test[i])
-            ax[i].set_title(f"Prediction {predictions[i]}")
-
-        plt.savefig("fig.png")
+        name = self.name_predictions + f"_{correction_name}_.png"
+        plot_predictions(5, 5, predictions, self.x_test, self.y_test)
 
         return accuracy
 

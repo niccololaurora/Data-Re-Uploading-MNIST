@@ -26,14 +26,23 @@ def main():
         layers=layers,
     )
 
+    # Initialize data
+    print("Initialize")
+    my_class.initialize_data()
+
+    accuracy = my_class.test_loop()
+
     # Carico i parametri
     with open("saved_parameters.pkl", "rb") as file:
         vparams = pickle.load(file)
 
+    print("Setto i parametri")
     my_class.set_parameters(vparams)
 
-    # Initialize data
-    my_class.initialize_data()
-
     # Test loop
-    accuracy = my_class.test_loop()
+    print("Accuracy")
+    # accuracy = my_class.test_loop()
+
+
+if __name__ == "__main__":
+    main()
