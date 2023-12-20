@@ -9,12 +9,12 @@ set_backend("tensorflow")
 
 def main():
     nome_file = "epochs.txt"
-    epochs = 2
-    learning_rate = 0.1
-    training_sample = 100
-    method = "Adam"
-    batch_size = 5
-    layers = 2
+    epochs = 0
+    learning_rate = 0
+    training_sample = 0
+    method = 0
+    batch_size = 0
+    layers = 0
 
     my_class = MyClass(
         epochs=epochs,

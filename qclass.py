@@ -372,10 +372,6 @@ class MyClass:
     def test_loop(self):
         predictions = []
         for x in self.x_test:
-            """
-            The outcome of the circuit will be a number in [-1, 1], hence
-            lo traslo in [0, 1].
-            """
             exp = self.circuit(x)
             output = (exp + 1) / 2
             predictions.append(output)
