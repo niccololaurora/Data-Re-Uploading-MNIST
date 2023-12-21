@@ -60,12 +60,12 @@ def plot_predictions(rows, columns, predictions, x_data, y_data, name):
 
     for i in range(rows):
         for j in range(columns):
-            rounded_prediction = round(predictions[i + j], 2)
-            ax[i][j].imshow(x_data[i + j], cmap="gray")
+            rounded_prediction = round(predictions[i * rows + j], 2)
+            ax[i][j].imshow(x_data[i * rows + j], cmap="gray")
 
-            is_correct = (predictions[i + j] >= 0.5 and y_data[i + j] == 1) or (
-                predictions[i + j] < 0.5 and y_data[i + j] == 0
-            )
+            is_correct = (
+                predictions[i * rows + j] >= 0.5 and y_data[i * rows + j] == 1
+            ) or (predictions[i * rows + j] < 0.5 and y_data[i * rows + j] == 0)
             title_color = "green" if is_correct else "red"
             ax[i][j].set_title(f"Prediction: {rounded_prediction}", color=title_color)
             ax[i][j].set_xticks([])

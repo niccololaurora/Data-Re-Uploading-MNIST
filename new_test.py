@@ -11,7 +11,7 @@ def main():
     nome_file = "epochs.txt"
     epochs = 2
     learning_rate = 0.01
-    training_sample = 10
+    training_sample = 26
     method = "Adam"
     batch_size = 2
     layers = 2
@@ -24,13 +24,16 @@ def main():
         batch_size=batch_size,
         nome_file=nome_file,
         layers=layers,
+        seed_value=0,
+        nome_barplot="barplot.png",
+        name_predictions="predict",
     )
 
     # Initialize data
     print("Initialize")
     my_class.initialize_data()
 
-    accuracy = my_class.test_loop()
+    accuracy = my_class.test_loop("new")
 
     # Carico i parametri
     with open("saved_parameters.pkl", "rb") as file:

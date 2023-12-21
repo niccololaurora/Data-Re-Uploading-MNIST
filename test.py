@@ -4,7 +4,7 @@ from qibo import Circuit, gates, hamiltonians, set_backend
 from tensorflow.keras.datasets import mnist
 import matplotlib.pyplot as plt
 
-
+"""
 train_size = 10
 validation_split = 0.2
 test_size = 10
@@ -55,3 +55,8 @@ for i in range(4):
         ax[j][i].imshow(x_train[j + i])
 
 plt.savefig("fig.png")
+"""
+
+x = [73, 86, 95, 87, 96, 90, 85, 96, 96, 59]
+print(f"Meda: {sum(x)/len(x)}")
+print(f"STD {np.std(x)}")

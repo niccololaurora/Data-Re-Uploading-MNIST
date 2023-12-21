@@ -346,7 +346,7 @@ class MyClass:
             if epochs_without_improvement >= self.patience:
                 with open(self.nome_file, "a") as file:
                     print(">" * 60, file=file)
-                    print(f"Early stopping at epoch {epoch + 1}.")
+                    print(f"Early stopping at epoch {epoch + 1}.", file=file)
                     print(">" * 60, file=file)
                 self.epochs_early_stopping = epoch + 1
                 return True

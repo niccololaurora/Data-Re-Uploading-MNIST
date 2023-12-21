@@ -20,24 +20,17 @@ def main():
     nome_barplot = "barplot.png"
     accuracy = []
     for j in range(len(layers)):
-        print("=" * 60)
-        print("=" * 60)
-        print(f"Layer = {layers[j]}")
-        print("=" * 60)
-        print("=" * 60)
         accuracy_layer = []
         for i in range(10):
-            print("/" * 60)
-            print("/" * 60)
-            print(f"Trial = {i}")
-            print("/" * 60)
-            print("/" * 60)
-
             # Nome files
             nome_file = f"layer_{layers[j]}_" + f"rep_{i}" + "_.txt"
             name_metrics = f"loss_layer_{layers[j]}_" + f"rep_{i}" + "_.png"
             name_params = f"params_layer_{layers[j]}_" + f"rep_{i}" + "_.pkl"
             name_predictions = f"predictions_layer_{layers[j]}_" + f"rep_{i}_"
+
+            with open(nome_file, "a") as file:
+                print(f"Layer = {layers[j]}", file=file)
+                print(f"Trial = {i}", file=file)
 
             # Update seed
             seed += 1
