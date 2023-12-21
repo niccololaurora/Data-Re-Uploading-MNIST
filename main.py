@@ -1,39 +1,37 @@
 import os
 import pickle
 import numpy as np
+import seaborn as sns
 from qclass import MyClass
 from qibo import set_backend
-from help_functions import plot_metrics
+from help_functions import plot_metrics, heatmap
 
 set_backend("tensorflow")
 
 
 def main():
-    epochs = 30
-    learning_rate = 0.01
-    training_sample = 200
+    epochs = 100
+    learning_rate = 0.05
+    training_sample = 500  # 350
+    # validation_sample = 150
+    test_sample = 100
     method = "Adam"
-    batch_size = 20
-    layers = [1, 2, 3, 4, 5, 6, 7, 8]
+    batch_size = 30
+    layers = [1, 2, 3, 4, 5, 6]
     seed = 0
+    bloch_size = 2
+    nqubits = [8, 6, 4, 2]
+    resize = 8
 
     nome_barplot = "barplot.png"
     accuracy = []
-    for j in range(len(layers)):
-        accuracy_layer = []
-        for i in range(10):
+    for k in range(len(nqubits)):
+        for j in range(len(layers)):
             # Nome files
-            nome_file = f"layer_{layers[j]}_" + f"rep_{i}" + "_.txt"
-            name_metrics = f"loss_layer_{layers[j]}_" + f"rep_{i}" + "_.png"
-            name_params = f"params_layer_{layers[j]}_" + f"rep_{i}" + "_.pkl"
-            name_predictions = f"predictions_layer_{layers[j]}_" + f"rep_{i}_"
-
-            with open(nome_file, "a") as file:
-                print(f"Layer = {layers[j]}", file=file)
-                print(f"Trial = {i}", file=file)
-
-            # Update seed
-            seed += 1
+            nome_file = f"history_q{nqubits[k]}_l{layers[j]}.txt"
+            name_metrics = f"loss_q{nqubits[k]}_l{layers[j]}.png"
+            name_params = f"params_q{nqubits[k]}_l{layers[j]}.pkl"
+            name_predictions = f"predictions_q{nqubits[k]}_l{layers[j]}_"
 
             # Create class
             my_class = MyClass(
@@ -47,6 +45,9 @@ def main():
                 name_predictions=name_predictions,
                 layers=layers[j],
                 seed_value=seed,
+                test_sample=test_sample,
+                nqubits=nqubits[k],
+                resize=resize,
             )
 
             # Initialize data
@@ -60,6 +61,7 @@ def main():
             with open(nome_file, "a") as file:
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
+                print(f"Layer = {layers[j]}", file=file)
                 print(f"Accuracy test set (before): {acc.result().numpy()}", file=file)
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
@@ -79,7 +81,7 @@ def main():
 
             # Test loop after training
             acc = my_class.test_loop("after")
-            accuracy_layer.append(acc.result().numpy())
+            accuracy.append(acc)
 
             # Save final parameters
             with open(name_params, "wb") as f:
@@ -93,20 +95,21 @@ def main():
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
 
-        # Calculate accuracy and deviation std
-        acc = sum(accuracy_layer) / len(accuracy_layer)
-        sigma_acc = np.std(accuracy_layer)
-        dict_acc = {"Accuracy": acc, "Deviazione Standard": sigma_acc}
-        accuracy.append(dict_acc)
-
     # Final summary of accuracies
     with open("summary.txt", "a") as file:
-        for i, acc_dict in enumerate(accuracy):
-            print("/" * 60, file=file)
-            print("/" * 60, file=file)
-            for key, value in acc_dict.items():
-                print(f"Number of layers: {i}", file=file)
-                print(f"{key}: {value}", file=file)
+        for k in range(len(nqubits)):
+            for i in range(len(layers)):
+                print("/" * 60, file=file)
+                print("/" * 60, file=file)
+                print(f"Number of qubits: {nqubits[k]}")
+                print(
+                    f"(Layers, Accuracy) = ({layers[i], accuracy[i + len(layers)*k]})"
+                )
+                print("/" * 60, file=file)
+                print("/" * 60, file=file)
+
+    # Heatmap
+    heatmap(accuracy, nqubits, layers)
 
 
 if __name__ == "__main__":

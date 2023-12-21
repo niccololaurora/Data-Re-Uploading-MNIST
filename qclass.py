@@ -2,16 +2,13 @@ import numpy as np
 import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
-from qibo.symbols import Z
+from qibo.symbols import Z, I
 from qibo import Circuit, gates, hamiltonians, set_backend
 from qibo.optimizers import optimize
 from help_functions import batch_data, calculate_batches, plot_predictions
 
 
 set_backend("tensorflow")
-
-# embedding 162
-# Pooling 18
 
 
 class MyClass:
@@ -26,22 +23,29 @@ class MyClass:
         seed_value,
         nome_barplot,
         name_predictions,
-        layers=1,
-        resize=9,
+        bloch_size,
+        test_sample,
+        nqubits,
+        layers,
+        resize,
     ):
         np.random.seed(seed_value)
         self.nome_barplot = nome_barplot
         self.nome_file = nome_file
         self.name_predictions = name_predictions
+        self.train_size = training_sample
+        self.test_size = test_sample
         self.epochs_early_stopping = epochs
         self.epochs = epochs
+        self.learning_rate = learning_rate
+        self.block_size = bloch_size
+        self.batch_size = batch_size
         self.method = method
+        self.resize = resize
+        self.layers = layers
         self.patience = 10
         self.tolerance = 1e-4
-        self.learning_rate = learning_rate
-        self.train_size = training_sample
-        self.test_size = training_sample
-        self.validation_split = 0.2
+        self.validation_split = 0.3
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
@@ -50,26 +54,29 @@ class MyClass:
         self.y_validation = 0
         self.batch_x = 0
         self.batch_y = 0
-        self.block_size = 3
-        self.batch_size = batch_size
         self.filt = "yes"
-        self.method = method
-        self.resize = resize
-        self.layers = layers
-        self.nqubits = 9
-        self.params_1layer = 180
+        self.nqubits = nqubits
+        self.n_embed_params = 2 * self.nqubits * self.block_size**2
+        self.params_1layer = 2 * self.nqubits + self.n_embed_params
+        # 180 = 2*9*9 + 2*9 per 9 qubit e blocchi 3x3
+        # 2*self.nqubits*(1 + self.bloch_size**2)
         self.vparams = np.random.normal(
             loc=0, scale=1, size=(self.params_1layer * self.layers,)
         ).astype(np.complex128)
-        self.hamiltonian = hamiltonians.SymbolicHamiltonian(
-            Z(0) * Z(1) * Z(2) * Z(3) * Z(4) * Z(5) * Z(6) * Z(7) * Z(8)
-        )
+        self.hamiltonian = self.create_hamiltonian()
         self.options = {
             "optimizer": self.method,
             "learning_rate": self.learning_rate,
             "nepochs": 1,
             "nmessage": 5,
         }
+
+    def create_hamiltonian(self):
+        ham = 0
+        for k in range(self.nqubits):
+            ham = I(0) * Z(k)
+        hamiltonian = hamiltonians.SymbolicHamiltonian(ham)
+        return hamiltonian
 
     def get_parameters(self):
         return self.vparams
@@ -179,31 +186,31 @@ class MyClass:
         plt.savefig(self.nome_barplot)
 
     def average_block(self, simple_list, k):
-        """
-        Args: list of 9 values
-        Return: circuit with embedded this 9 values
-        """
-        c = Circuit(9)
+        c = Circuit(self.nqubits)
         for q, value in enumerate(simple_list):
-            rx = (
-                self.vparams[(q * 2) + k * self.params_1layer] * value
-                + self.vparams[(q * 2 + 1) + k * self.params_1layer]
+            # parametri layer precedenti + parametri embedding + q
+            angle = (
+                self.vparams[k * self.params_1layer + self.n_embed_params + 2 * q]
+                * value
+                + self.vparams[
+                    k * self.params_1layer + self.n_embed_params + (2 * q + 1)
+                ]
             )
-            c.add(gates.RX(q, theta=rx))
+            c.add(gates.RX(q, theta=angle))
         return c
 
     def max_block(self, simple_list, k):
-        """
-        Args: list of 9 values
-        Return: circuit with embedded this 9 values
-        """
-        c = Circuit(9)
+        c = Circuit(self.nqubits)
         for q, value in enumerate(simple_list):
-            rx = (
-                self.vparams[(q * 2) + k * self.params_1layer] * value
-                + self.vparams[(q * 2 + 1) + k * self.params_1layer]
+            # parametri layer precedenti + parametri embedding + q
+            angle = (
+                self.vparams[k * self.params_1layer + self.n_embed_params + 2 * q]
+                * value
+                + self.vparams[
+                    k * self.params_1layer + self.n_embed_params + (2 * q + 1)
+                ]
             )
-            c.add(gates.RX(q, theta=rx))
+            c.add(gates.RX(q, theta=angle))
         return c
 
     def entanglement_block(self):
@@ -211,22 +218,35 @@ class MyClass:
         Args: None
         Return: circuit with CZs
         """
-        c = Circuit(9)
-        for q in range(0, 8, 2):
+        c = Circuit(self.nqubits)
+        for q in range(0, self.nqubits - 1, 2):
             c.add(gates.CNOT(q, q + 1))
-        for q in range(1, 7, 2):
+        for q in range(1, self.nqubits - 2, 2):
             c.add(gates.CNOT(q, q + 1))
-        c.add(gates.CNOT(8, 0))
+        c.add(gates.CNOT(self.nqubits - 1, 0))
         return c
 
-    def embedding_block(self, blocks, k):
+    def embedding_block(self, blocks, nlayer):
         """
-        Args: an image divided in blocks (9 blocks 3x3)
+        Args: an image divided in blocks (16 blocks 2x2)
         Return: a qibo circuit with the embedded image
         """
-        c = Circuit(9)
+
+        c = Circuit(self.nqubits)
         for j, block in enumerate(blocks):
             for i, x in enumerate(block):
+                # parametri layer precedenti + i
+                angle = (
+                    self.vparams[nlayer * self.params_1layer + i * 2] * x
+                    + self.vparams[nlayer * self.params_1layer + (i * 2 + 1)]
+                )
+
+                if (i == 0) or (i == 2) or (i == 3) or (i == 5) or (i == 6) or (i == 8):
+                    c.add(gates.RY(j, theta=angle))
+                else:
+                    c.add(gates.RZ(j, theta=angle))
+
+                """
                 ry_0 = (
                     self.vparams[(i * 6) + k * self.params_1layer] * x[0]
                     + self.vparams[(i * 6 + 1) + k * self.params_1layer]
@@ -242,6 +262,7 @@ class MyClass:
                 c.add(gates.RY(j, theta=ry_0))
                 c.add(gates.RZ(j, theta=rz_1))
                 c.add(gates.RY(j, theta=ry_2))
+                """
 
         return c
 
@@ -287,7 +308,8 @@ class MyClass:
             for j in range(0, image.shape[1], self.block_size):
                 # Extract the block
                 block = image[i : i + self.block_size, j : j + self.block_size]
-                block = tf.reshape(block, (3, 3))
+                # block = tf.reshape(block, (self.block_size, self.block_size))
+                block = tf.reshape(block, [-1])
                 blocks.append(block)
 
         return blocks

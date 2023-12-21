@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def batch_data(x_train, y_train, number_of_batches, sizes_batches):
@@ -72,3 +73,19 @@ def plot_predictions(rows, columns, predictions, x_data, y_data, name):
             ax[i][j].set_yticks([])
 
     plt.savefig(name)
+
+
+def heatmap(accuracy, nqubits, layers):
+    accuracy_matrix = np.array(accuracy).reshape(len(nqubits), len(layers))
+    sns.heatmap(
+        accuracy_matrix,
+        annot=True,
+        fmt=".2f",
+        cmap="viridis",
+        xticklabels=layers,
+        yticklabels=nqubits,
+    )
+    plt.xlabel("Number of Layers")
+    plt.ylabel("Number of Qubits")
+    plt.title("Accuracy Heatmap")
+    plt.savefig("heatmap.png")
