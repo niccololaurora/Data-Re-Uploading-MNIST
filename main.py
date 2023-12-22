@@ -4,7 +4,7 @@ import numpy as np
 import seaborn as sns
 from qclass import MyClass
 from qibo import set_backend
-from help_functions import plot_metrics, heatmap
+from help_functions import plot_metrics, heatmap, histo
 
 set_backend("tensorflow")
 
@@ -12,14 +12,13 @@ set_backend("tensorflow")
 def main():
     epochs = 100
     learning_rate = 0.05
-    training_sample = 500  # 350
-    # validation_sample = 150
+    training_sample = 500
     test_sample = 100
     method = "Adam"
     batch_size = 30
     layers = [1, 2, 3, 4, 5, 6]
     seed = 0
-    bloch_size = 2
+    block_sizes = [[2, 4], [3, 4], [4, 4], [4, 8]]
     nqubits = [8, 6, 4, 2]
     resize = 8
 
@@ -48,6 +47,8 @@ def main():
                 test_sample=test_sample,
                 nqubits=nqubits[k],
                 resize=resize,
+                block_width=block_sizes[k][0],
+                block_heigth=block_sizes[k][1],
             )
 
             # Initialize data
@@ -57,18 +58,24 @@ def main():
             my_class.barplot()
 
             # Test loop before training
-            acc = my_class.test_loop("before")
+            acc, predictions, labels = my_class.test_loop("before")
+            accuracy.append(acc.result().numpy())
+            histo(predictions, labels, acc.result().numpy(), "before")
             with open(nome_file, "a") as file:
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
                 print(f"Layer = {layers[j]}", file=file)
-                print(f"Accuracy test set (before): {acc.result().numpy()}", file=file)
+                print(
+                    f"Accuracy test set (before): {acc.result().numpy()}",
+                    file=file,
+                )
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
 
             # Training loop
             (
                 epoch_train_loss,
+                epoch_train_accuracy,
                 epoch_validation_loss,
                 params,
                 epochs,
@@ -76,12 +83,18 @@ def main():
 
             # Plot training and validation loss
             plot_metrics(
-                epochs, epoch_train_loss, method, name_metrics, epoch_validation_loss
+                epochs,
+                epoch_train_loss,
+                epoch_train_accuracy,
+                method,
+                name_metrics,
+                epoch_validation_loss,
             )
 
             # Test loop after training
-            acc = my_class.test_loop("after")
-            accuracy.append(acc)
+            acc, predictions, labels = my_class.test_loop("after")
+            accuracy.append(acc.result().numpy())
+            histo(predictions, labels, acc.result().numpy(), "after")
 
             # Save final parameters
             with open(name_params, "wb") as f:
@@ -101,9 +114,10 @@ def main():
             for i in range(len(layers)):
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
-                print(f"Number of qubits: {nqubits[k]}")
+                print(f"Number of qubits: {nqubits[k]}", file=file)
                 print(
-                    f"(Layers, Accuracy) = ({layers[i], accuracy[i + len(layers)*k]})"
+                    f"(Layers, Accuracy) = ({layers[i], accuracy[i + len(layers)*k]})",
+                    file=file,
                 )
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)

@@ -40,23 +40,35 @@ def calculate_batches(x_train, batch_size):
 
 
 def plot_metrics(
-    nepochs, train_loss_history, method, name_metrics, validation_loss_history=None
+    nepochs,
+    train_loss_history,
+    train_accuracy_history,
+    method,
+    name_metrics,
+    validation_loss_history=None,
 ):
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
 
     epochs = np.arange(0, nepochs, 1)
-    ax.plot(epochs, train_loss_history, label="Train Loss")
+    ax[0].plot(epochs, train_loss_history, label="Training Loss")
+    ax[1].plot(epochs, train_accuracy_history, label="Training Accuracy")
 
     if validation_loss_history is not None:
-        ax.plot(epochs, validation_loss_history, label="Validation Loss")
+        ax[0].plot(epochs, validation_loss_history, label="Validation Loss")
 
-    ax.set_title(method)
-    ax.legend()
-    ax.set_xlabel("Epochs")
+    ax[0].set_title("Loss")
+    ax[1].set_title("Accuracy")
+    ax[0].legend()
+    ax[1].legend()
+    ax[0].set_xlabel("Epochs")
+    ax[1].set_xlabel("Epochs")
     plt.savefig(name_metrics)
+    plt.close()
 
 
-def plot_predictions(rows, columns, predictions, x_data, y_data, name):
+def plot_predictions(predictions, x_data, y_data, name):
+    rows = 5
+    columns = 5
     fig, ax = plt.subplots(nrows=rows, ncols=columns, figsize=(12, 12))
 
     for i in range(rows):
@@ -73,6 +85,7 @@ def plot_predictions(rows, columns, predictions, x_data, y_data, name):
             ax[i][j].set_yticks([])
 
     plt.savefig(name)
+    plt.close()
 
 
 def heatmap(accuracy, nqubits, layers):
@@ -89,3 +102,35 @@ def heatmap(accuracy, nqubits, layers):
     plt.ylabel("Number of Qubits")
     plt.title("Accuracy Heatmap")
     plt.savefig("heatmap.png")
+    plt.close()
+
+
+def histo(predictions, labels, accuracy, name):
+    # Costruisco due liste
+    # La prima lista contiene le predizioni che il modello ha fatto quando l'immagine era uno zero
+    zeros_predictions = [pred for pred, label in zip(predictions, labels) if label == 0]
+    ones_predictions = [pred for pred, label in zip(predictions, labels) if label == 1]
+
+    plt.hist(
+        [zeros_predictions, ones_predictions],
+        bins=20,
+        color=["red", "blue"],
+        label=["Zeros", "Ones"],
+    )
+    plt.xlabel("Predictions")
+    plt.ylabel("Frequency")
+    plt.title("Predictions distribution")
+
+    plt.text(
+        0.5,
+        0.9,
+        f"Accuracy: {accuracy:.2%}",
+        transform=plt.gca().transAxes,
+        color="black",
+        fontsize=10,
+        ha="center",
+    )
+
+    name_file = "distribution_" + name + "_.png"
+    plt.savefig(name_file)
+    plt.close()

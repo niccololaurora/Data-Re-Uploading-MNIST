@@ -23,7 +23,8 @@ class MyClass:
         seed_value,
         nome_barplot,
         name_predictions,
-        bloch_size,
+        block_width,
+        block_heigth,
         test_sample,
         nqubits,
         layers,
@@ -38,7 +39,8 @@ class MyClass:
         self.epochs_early_stopping = epochs
         self.epochs = epochs
         self.learning_rate = learning_rate
-        self.block_size = bloch_size
+        self.block_width = block_width
+        self.block_heigth = block_heigth
         self.batch_size = batch_size
         self.method = method
         self.resize = resize
@@ -56,7 +58,7 @@ class MyClass:
         self.batch_y = 0
         self.filt = "yes"
         self.nqubits = nqubits
-        self.n_embed_params = 2 * self.nqubits * self.block_size**2
+        self.n_embed_params = 2 * self.nqubits * self.block_width * self.block_heigth
         self.params_1layer = 2 * self.nqubits + self.n_embed_params
         # 180 = 2*9*9 + 2*9 per 9 qubit e blocchi 3x3
         # 2*self.nqubits*(1 + self.bloch_size**2)
@@ -184,6 +186,7 @@ class MyClass:
             axis.set_title(title)
 
         plt.savefig(self.nome_barplot)
+        plt.close()
 
     def average_block(self, simple_list, k):
         c = Circuit(self.nqubits)
@@ -227,11 +230,6 @@ class MyClass:
         return c
 
     def embedding_block(self, blocks, nlayer):
-        """
-        Args: an image divided in blocks (16 blocks 2x2)
-        Return: a qibo circuit with the embedded image
-        """
-
         c = Circuit(self.nqubits)
         for j, block in enumerate(blocks):
             for i, x in enumerate(block):
@@ -241,28 +239,23 @@ class MyClass:
                     + self.vparams[nlayer * self.params_1layer + (i * 2 + 1)]
                 )
 
-                if (i == 0) or (i == 2) or (i == 3) or (i == 5) or (i == 6) or (i == 8):
-                    c.add(gates.RY(j, theta=angle))
-                else:
+                if (
+                    (i == 1)  # 02
+                    or (i == 4)  # 35
+                    or (i == 7)  # 68
+                    or (i == 10)  # 911
+                    or (i == 13)  # 1214
+                    or (i == 16)  # 1517
+                    or (i == 19)  # 1820
+                    or (i == 22)  # 2123
+                    or (i == 25)  # 2426
+                    or (i == 28)  # 2729
+                    or (i == 31)  # 3032
+                    or (i == 34)  # 3334
+                ):
                     c.add(gates.RZ(j, theta=angle))
-
-                """
-                ry_0 = (
-                    self.vparams[(i * 6) + k * self.params_1layer] * x[0]
-                    + self.vparams[(i * 6 + 1) + k * self.params_1layer]
-                )
-                rz_1 = (
-                    self.vparams[(i * 6 + 2) + k * self.params_1layer] * x[1]
-                    + self.vparams[(i * 6 + 3) + k * self.params_1layer]
-                )
-                ry_2 = (
-                    self.vparams[(i * 6 + 4) + k * self.params_1layer] * x[2]
-                    + self.vparams[(i * 6 + 5) + k * self.params_1layer]
-                )
-                c.add(gates.RY(j, theta=ry_0))
-                c.add(gates.RZ(j, theta=rz_1))
-                c.add(gates.RY(j, theta=ry_2))
-                """
+                else:
+                    c.add(gates.RY(j, theta=angle))
 
         return c
 
@@ -284,34 +277,12 @@ class MyClass:
         return average_values
 
     def block_creator(self, image):
-        """
-        Args: an image
-        Return: una lista che contiene i riquadri (in versione flat) in cui
-        è stata divisa l'immagine.
-
-        Example:
-        image = [[
-            [0, 0, 0, 0, 3, 2, 4, 5],
-            [0, 0, 0, 0, 1, 6, 7, 8],
-            [1, 2, 3, 4, 5, 6, 7, 8],
-            [1, 2, 3, 4, 5, 6, 7, 8],
-            [0, 0, 0, 0, 3, 2, 4, 5],
-            [0, 0, 0, 0, 1, 6, 7, 8],
-            [1, 2, 3, 4, 5, 6, 7, 8],
-            [1, 2, 3, 4, 5, 6, 7, 8],
-        ]]
-        blocks = [[0,0,0,0], [0,0,0,0], [3,2,1,6], [4,5,7,8], ..., [7,8,7,8]]
-        """
         blocks = []
-
-        for i in range(0, image.shape[0], self.block_size):
-            for j in range(0, image.shape[1], self.block_size):
-                # Extract the block
-                block = image[i : i + self.block_size, j : j + self.block_size]
-                # block = tf.reshape(block, (self.block_size, self.block_size))
+        for i in range(0, image.shape[0], self.block_heigth):
+            for j in range(0, image.shape[1], self.block_width):
+                block = image[i : i + self.block_heigth, j : j + self.block_width]
                 block = tf.reshape(block, [-1])
                 blocks.append(block)
-
         return blocks
 
     def circuit(self, x):
@@ -382,10 +353,6 @@ class MyClass:
 
         predictions = []
         for x in batch_x:
-            """
-            The outcome of the circuit will be a number in [-1, 1], hence
-            lo traslo in [0, 1].
-            """
             exp = self.circuit(x)
             output = (exp + 1) / 2
             predictions.append(output)
@@ -393,7 +360,7 @@ class MyClass:
         cf = tf.keras.losses.BinaryCrossentropy()(batch_y, predictions)
         return cf
 
-    def test_loop(self, correction_name):
+    def test_loop(self, correction_name=None):
         predictions = []
         for x in self.x_test:
             exp = self.circuit(x)
@@ -403,9 +370,10 @@ class MyClass:
         accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
         accuracy.update_state(self.y_test, predictions)
 
-        name = self.name_predictions + f"_{correction_name}_.png"
-        plot_predictions(5, 5, predictions, self.x_test, self.y_test, name)
-
+        if correction_name != None:
+            name = self.name_predictions + f"_{correction_name}_.png"
+            plot_predictions(predictions, self.x_test, self.y_test, name)
+            return accuracy, predictions, self.y_test
         return accuracy
 
     def validation_loop(self):
@@ -426,6 +394,7 @@ class MyClass:
         ):
             best, params, extra = 0, 0, 0
             epoch_train_loss = []
+            epoch_train_accuracy = []
             epoch_validation_loss = []
             early_stopping = []
             for i in range(self.epochs):
@@ -448,6 +417,10 @@ class MyClass:
                 e_train_loss = sum(batch_train_loss) / len(batch_train_loss)
                 epoch_train_loss.append(e_train_loss)
 
+                # Accuracy training
+                e_training_accuracy = self.test_loop()
+                epoch_train_accuracy.append(e_training_accuracy.result().numpy())
+
                 # Loss Validation
                 validation_loss = self.validation_loop()
                 epoch_validation_loss.append(validation_loss)
@@ -459,12 +432,14 @@ class MyClass:
                     print("/" * 60, file=file)
 
                 # Early Stopping
+                """
                 if self.early_stopping(epoch_train_loss, epoch_validation_loss) == True:
                     with open(self.nome_file, "a") as file:
                         print("=" * 60, file=file)
                         print(f"Parametri finali:\n{params[0:20]}", file=file)
                         print("=" * 60, file=file)
                     break
+                """
 
         else:
             best, params, extra = optimize(
@@ -475,6 +450,7 @@ class MyClass:
 
         return (
             epoch_train_loss,
+            epoch_train_accuracy,
             epoch_validation_loss,
             params,
             self.epochs_early_stopping,
