@@ -17,18 +17,18 @@ class MyClass:
         epochs,
         learning_rate,
         training_sample,
-        method,
+        test_sample,
         batch_size,
+        method,
         nome_file,
         seed_value,
-        nome_barplot,
-        name_predictions,
         block_width,
         block_heigth,
-        test_sample,
         nqubits,
         layers,
         resize,
+        nome_barplot,
+        name_predictions,
     ):
         np.random.seed(seed_value)
         self.nome_barplot = nome_barplot
@@ -73,6 +73,10 @@ class MyClass:
             "nmessage": 5,
         }
 
+    # ================
+    # Miscellaneous functions
+    # ================
+
     def create_hamiltonian(self):
         ham = 0
         for k in range(self.nqubits):
@@ -85,63 +89,6 @@ class MyClass:
 
     def set_parameters(self, vparams):
         self.vparams = vparams
-
-    def initialize_data(self):
-        (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-
-        if self.filt == "yes":
-            mask_train = (y_train == 0) | (y_train == 1)
-            mask_test = (y_test == 0) | (y_test == 1)
-            x_train = x_train[mask_train]
-            y_train = y_train[mask_train]
-            x_test = x_test[mask_test]
-            y_test = y_test[mask_test]
-
-        if self.train_size != 0:
-            x_train = x_train[0 : self.train_size]
-            y_train = y_train[0 : self.train_size]
-            validation_size = int(len(x_train) * self.validation_split)
-
-            x_validation = x_train[:validation_size]
-            y_validation = y_train[:validation_size]
-            x_train = x_train[validation_size:]
-            y_train = y_train[validation_size:]
-            x_test = x_test[0 : self.test_size]
-            y_test = y_test[0 : self.test_size]
-
-        # Resize images
-        width, length = self.resize, self.resize
-
-        x_train = tf.expand_dims(x_train, axis=-1)
-        x_test = tf.expand_dims(x_test, axis=-1)
-        x_validation = tf.expand_dims(x_validation, axis=-1)
-
-        x_train = tf.image.resize(x_train, [width, length])
-        x_test = tf.image.resize(x_test, [width, length])
-        x_validation = tf.image.resize(x_validation, [width, length])
-
-        # Normalize pixel values to be between 0 and 1
-        x_train = x_train / 255.0
-        x_test = x_test / 255.0
-        x_validation = x_validation / 255.0
-
-        self.x_train = x_train
-        self.y_train = y_train
-        self.x_test = x_test
-        self.y_test = y_test
-        self.x_validation = x_validation
-        self.y_validation = y_validation
-
-        # Batching
-        number_of_batches, sizes_batches = calculate_batches(
-            self.x_train, self.batch_size
-        )
-        self.batch_x, self.batch_y = batch_data(
-            self.x_train,
-            self.y_train,
-            number_of_batches,
-            sizes_batches,
-        )
 
     def barplot(self):
         # Counting zeros and ones in each dataset
@@ -187,6 +134,10 @@ class MyClass:
 
         plt.savefig(self.nome_barplot)
         plt.close()
+
+    # ================
+    # Circuit blocks
+    # ================
 
     def average_block(self, simple_list, k):
         c = Circuit(self.nqubits)
@@ -259,32 +210,6 @@ class MyClass:
 
         return c
 
-    def max_pooling(self, blocks):
-        max_values = []
-        for block in blocks:
-            block = tf.reshape(block, [-1])
-            max_values.append(max(block))
-
-        return max_values
-
-    def average_pooling(self, blocks):
-        average_values = []
-        for block in blocks:
-            block = tf.reshape(block, [-1])
-            mean = sum(block) / len(block)
-            average_values.append(mean)
-
-        return average_values
-
-    def block_creator(self, image):
-        blocks = []
-        for i in range(0, image.shape[0], self.block_heigth):
-            for j in range(0, image.shape[1], self.block_width):
-                block = image[i : i + self.block_heigth, j : j + self.block_width]
-                block = tf.reshape(block, [-1])
-                blocks.append(block)
-        return blocks
-
     def circuit(self, x):
         # Suddivido l'immagine 9x9 in 9 blocchi 3x3 (appiattiti)
         blocks = self.block_creator(x)
@@ -321,30 +246,97 @@ class MyClass:
         expectation_value = self.hamiltonian.expectation(res_aver.state())
         return expectation_value
 
-    def early_stopping(self, training_loss_history, validation_loss_history):
-        best_validation_loss = np.inf
-        epochs_without_improvement = 0
+    # ================
+    # Image processing: max and average pooling,
+    # block creator and data initilization
+    # ================
 
-        for epoch in range(len(training_loss_history)):
-            training_loss = training_loss_history[epoch]
-            validation_loss = validation_loss_history[epoch]
+    def initialize_data(self):
+        (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
-            # Verifica se la loss di validazione ha migliorato
-            if validation_loss < best_validation_loss - self.tolerance:
-                best_validation_loss = validation_loss
-                epochs_without_improvement = 0
-            else:
-                epochs_without_improvement += 1
+        if self.filt == "yes":
+            mask_train = (y_train == 0) | (y_train == 1)
+            mask_test = (y_test == 0) | (y_test == 1)
+            x_train = x_train[mask_train]
+            y_train = y_train[mask_train]
+            x_test = x_test[mask_test]
+            y_test = y_test[mask_test]
 
-            if epochs_without_improvement >= self.patience:
-                with open(self.nome_file, "a") as file:
-                    print(">" * 60, file=file)
-                    print(f"Early stopping at epoch {epoch + 1}.", file=file)
-                    print(">" * 60, file=file)
-                self.epochs_early_stopping = epoch + 1
-                return True
+        if self.train_size != 0:
+            x_train = x_train[0 : self.train_size]
+            y_train = y_train[0 : self.train_size]
+            validation_size = int(len(x_train) * self.validation_split)
 
-        return False
+            x_validation = x_train[:validation_size]
+            y_validation = y_train[:validation_size]
+            x_train = x_train[validation_size:]
+            y_train = y_train[validation_size:]
+            x_test = x_test[0 : self.test_size]
+            y_test = y_test[0 : self.test_size]
+
+        # Resize images
+        width, length = self.resize, self.resize
+
+        x_train = tf.expand_dims(x_train, axis=-1)
+        x_test = tf.expand_dims(x_test, axis=-1)
+        x_validation = tf.expand_dims(x_validation, axis=-1)
+
+        x_train = tf.image.resize(x_train, [width, length])
+        x_test = tf.image.resize(x_test, [width, length])
+        x_validation = tf.image.resize(x_validation, [width, length])
+
+        # Normalize pixel values to be between 0 and 1
+        x_train = x_train / 255.0
+        x_test = x_test / 255.0
+        x_validation = x_validation / 255.0
+
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_test = x_test
+        self.y_test = y_test
+        self.x_validation = x_validation
+        self.y_validation = y_validation
+
+        # Batching
+        number_of_batches, sizes_batches = calculate_batches(
+            self.x_train, self.batch_size
+        )
+        self.batch_x, self.batch_y = batch_data(
+            self.x_train,
+            self.y_train,
+            number_of_batches,
+            sizes_batches,
+        )
+
+    def max_pooling(self, blocks):
+        max_values = []
+        for block in blocks:
+            block = tf.reshape(block, [-1])
+            max_values.append(max(block))
+
+        return max_values
+
+    def average_pooling(self, blocks):
+        average_values = []
+        for block in blocks:
+            block = tf.reshape(block, [-1])
+            mean = sum(block) / len(block)
+            average_values.append(mean)
+
+        return average_values
+
+    def block_creator(self, image):
+        blocks = []
+        for i in range(0, image.shape[0], self.block_heigth):
+            for j in range(0, image.shape[1], self.block_width):
+                block = image[i : i + self.block_heigth, j : j + self.block_width]
+                block = tf.reshape(block, [-1])
+                blocks.append(block)
+        return blocks
+
+    # ================
+    # Loss
+    # ================
 
     def loss_function(self, vparams, batch_x, batch_y):
         if vparams is None:
@@ -359,6 +351,10 @@ class MyClass:
 
         cf = tf.keras.losses.BinaryCrossentropy()(batch_y, predictions)
         return cf
+
+    # =================
+    # Training, Validation, Test loops
+    # =================
 
     def test_loop(self, correction_name=None):
         predictions = []
@@ -432,14 +428,12 @@ class MyClass:
                     print("/" * 60, file=file)
 
                 # Early Stopping
-                """
                 if self.early_stopping(epoch_train_loss, epoch_validation_loss) == True:
                     with open(self.nome_file, "a") as file:
                         print("=" * 60, file=file)
                         print(f"Parametri finali:\n{params[0:20]}", file=file)
                         print("=" * 60, file=file)
                     break
-                """
 
         else:
             best, params, extra = optimize(
@@ -455,3 +449,28 @@ class MyClass:
             params,
             self.epochs_early_stopping,
         )
+
+    def early_stopping(self, training_loss_history, validation_loss_history):
+        best_validation_loss = np.inf
+        epochs_without_improvement = 0
+
+        for epoch in range(len(training_loss_history)):
+            training_loss = training_loss_history[epoch]
+            validation_loss = validation_loss_history[epoch]
+
+            # Verifica se la loss di validazione ha migliorato
+            if validation_loss < best_validation_loss - self.tolerance:
+                best_validation_loss = validation_loss
+                epochs_without_improvement = 0
+            else:
+                epochs_without_improvement += 1
+
+            if epochs_without_improvement >= self.patience:
+                with open(self.nome_file, "a") as file:
+                    print(">" * 60, file=file)
+                    print(f"Early stopping at epoch {epoch + 1}.", file=file)
+                    print(">" * 60, file=file)
+                self.epochs_early_stopping = epoch + 1
+                return True
+
+        return False

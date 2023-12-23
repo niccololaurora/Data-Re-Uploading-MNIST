@@ -58,9 +58,10 @@ def main():
             my_class.barplot()
 
             # Test loop before training
+            name = f"q{nqubits[k]}_l{layers[j]}_before"
             acc, predictions, labels = my_class.test_loop("before")
             accuracy.append(acc.result().numpy())
-            histo(predictions, labels, acc.result().numpy(), "before")
+            histo(predictions, labels, acc.result().numpy(), name)
             with open(nome_file, "a") as file:
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
@@ -92,9 +93,10 @@ def main():
             )
 
             # Test loop after training
+            name = f"q{nqubits[k]}_l{layers[j]}_after"
             acc, predictions, labels = my_class.test_loop("after")
             accuracy.append(acc.result().numpy())
-            histo(predictions, labels, acc.result().numpy(), "after")
+            histo(predictions, labels, acc.result().numpy(), name)
 
             # Save final parameters
             with open(name_params, "wb") as f:

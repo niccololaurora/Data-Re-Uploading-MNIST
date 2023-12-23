@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
+# ================
+# Batch functions
+# ================
+
+
 def batch_data(x_train, y_train, number_of_batches, sizes_batches):
     x_batch = []
     y_batch = []
@@ -37,6 +42,11 @@ def calculate_batches(x_train, batch_size):
         sizes_batches.append(size_last_batch)
 
     return number_of_batches, sizes_batches
+
+
+# ================
+# Plot functions
+# ================
 
 
 def plot_metrics(
@@ -116,10 +126,14 @@ def histo(predictions, labels, accuracy, name):
         bins=20,
         color=["red", "blue"],
         label=["Zeros", "Ones"],
+        histtype="step",
+        linewidth=1.5,
     )
+
     plt.xlabel("Predictions")
     plt.ylabel("Frequency")
     plt.title("Predictions distribution")
+    plt.legend()
 
     plt.text(
         0.5,
