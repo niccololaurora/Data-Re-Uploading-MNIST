@@ -392,7 +392,6 @@ class MyClass:
             epoch_train_loss = []
             epoch_train_accuracy = []
             epoch_validation_loss = []
-            early_stopping = []
             for i in range(self.epochs):
                 with open(self.nome_file, "a") as file:
                     print("=" * 60, file=file)
@@ -422,17 +421,15 @@ class MyClass:
                 epoch_validation_loss.append(validation_loss)
 
                 with open(self.nome_file, "a") as file:
-                    print("/" * 60, file=file)
                     print(f"Loss training set: {e_train_loss}", file=file)
                     print(f"Loss validation set: {validation_loss}", file=file)
-                    print("/" * 60, file=file)
 
                 # Early Stopping
                 if self.early_stopping(epoch_train_loss, epoch_validation_loss) == True:
                     with open(self.nome_file, "a") as file:
-                        print("=" * 60, file=file)
-                        print(f"Parametri finali:\n{params[0:20]}", file=file)
-                        print("=" * 60, file=file)
+                        print(">" * 60, file=file)
+                        print(f"Early stopping at epoch {i + 1}.", file=file)
+                        print(">" * 60, file=file)
                     break
 
         else:
@@ -466,11 +463,20 @@ class MyClass:
                 epochs_without_improvement += 1
 
             if epochs_without_improvement >= self.patience:
+                self.epochs_early_stopping = epoch + 1
                 with open(self.nome_file, "a") as file:
                     print(">" * 60, file=file)
-                    print(f"Early stopping at epoch {epoch + 1}.", file=file)
+                    print(
+                        f"Epochs without improvement: {epochs_without_improvement}",
+                        file=file,
+                    )
                     print(">" * 60, file=file)
-                self.epochs_early_stopping = epoch + 1
+
                 return True
 
+        with open(self.nome_file, "a") as file:
+            print(
+                f"Epochs without improvement: {epochs_without_improvement}",
+                file=file,
+            )
         return False

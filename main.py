@@ -31,6 +31,7 @@ def main():
             name_metrics = f"loss_q{nqubits[k]}_l{layers[j]}.png"
             name_params = f"params_q{nqubits[k]}_l{layers[j]}.pkl"
             name_predictions = f"predictions_q{nqubits[k]}_l{layers[j]}_"
+            name_early = f"early_q{nqubits[k]}_l{layers[j]}.txt"
 
             # Create class
             my_class = MyClass(
@@ -40,6 +41,7 @@ def main():
                 method=method,
                 batch_size=batch_size,
                 nome_file=nome_file,
+                name_early=name_early,
                 nome_barplot=nome_barplot,
                 name_predictions=name_predictions,
                 layers=layers[j],
@@ -79,12 +81,12 @@ def main():
                 epoch_train_accuracy,
                 epoch_validation_loss,
                 params,
-                epochs,
+                epochs_stop,
             ) = my_class.training_loop()
 
             # Plot training and validation loss
             plot_metrics(
-                epochs,
+                epochs_stop,
                 epoch_train_loss,
                 epoch_train_accuracy,
                 method,

@@ -77,8 +77,8 @@ def plot_metrics(
 
 
 def plot_predictions(predictions, x_data, y_data, name):
-    rows = 5
-    columns = 5
+    rows = 2
+    columns = 2
     fig, ax = plt.subplots(nrows=rows, ncols=columns, figsize=(12, 12))
 
     for i in range(rows):
