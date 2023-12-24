@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import imageio
+from qiskit.visualization import plot_state_qsphere
 
 
 # ================
@@ -108,14 +110,14 @@ def heatmap(accuracy, nqubits, layers):
         xticklabels=layers,
         yticklabels=nqubits,
     )
-    plt.xlabel("Number of Layers")
-    plt.ylabel("Number of Qubits")
+    plt.xlabel("Layers")
+    plt.ylabel("Qubits")
     plt.title("Accuracy Heatmap")
     plt.savefig("heatmap.png")
     plt.close()
 
 
-def histo(predictions, labels, accuracy, name):
+def histogram_separation(predictions, labels, accuracy, name):
     # Costruisco due liste
     # La prima lista contiene le predizioni che il modello ha fatto quando l'immagine era uno zero
     zeros_predictions = [pred for pred, label in zip(predictions, labels) if label == 0]
@@ -147,4 +149,30 @@ def histo(predictions, labels, accuracy, name):
 
     name_file = "distribution_" + name + "_.png"
     plt.savefig(name_file)
+    plt.close()
+
+
+def states_visualization(stato, name, epoch):
+    fig, ax = plt.subplots(figsize=(10, 10))
+    plot_state_qsphere(stato, ax=ax)
+    fig.text(0.2, 0.8, "Epoch " + str(epoch), fontsize=30)
+    name_file = name + "e" + str(epoch) + ".png"
+    fig.savefig(name_file)
+    plt.close(fig)
+
+
+def accuracy_vs_layers(accuracy, nqubits, layers):
+    fig, ax = plt.subplots()
+    linestyle = "--"
+
+    for k in range(len(nqubits)):
+        label = f"{nqubits[k]} qubits"
+        ax.plot(layers, accuracy[k], linestyle, marker="o", label=label)
+
+    ax.set_xlabel("Layers")
+    ax.set_ylabel("Accuracy")
+    ax.set_xticks(layers)
+    ax.grid(True)
+    ax.legend()
+    plt.savefig("accuracy_plot.png")
     plt.close()

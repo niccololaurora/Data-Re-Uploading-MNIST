@@ -29,25 +29,35 @@ class MyClass:
         resize,
         nome_barplot,
         name_predictions,
+        name_qsphere,
     ):
         np.random.seed(seed_value)
-        self.nome_barplot = nome_barplot
-        self.nome_file = nome_file
-        self.name_predictions = name_predictions
+
+        # TRAINING SPECIFICS
         self.train_size = training_sample
         self.test_size = test_sample
         self.epochs_early_stopping = epochs
         self.epochs = epochs
         self.learning_rate = learning_rate
-        self.block_width = block_width
-        self.block_heigth = block_heigth
         self.batch_size = batch_size
         self.method = method
-        self.resize = resize
-        self.layers = layers
         self.patience = 10
         self.tolerance = 1e-4
         self.validation_split = 0.3
+        self.options = {
+            "optimizer": self.method,
+            "learning_rate": self.learning_rate,
+            "nepochs": 1,
+            "nmessage": 5,
+        }
+
+        # IMAGES SPECIFICS
+        self.block_width = block_width
+        self.block_heigth = block_heigth
+        self.resize = resize
+        self.filt = "yes"
+
+        # DATASET
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
@@ -56,8 +66,10 @@ class MyClass:
         self.y_validation = 0
         self.batch_x = 0
         self.batch_y = 0
-        self.filt = "yes"
+
+        # ARCHITECTURE
         self.nqubits = nqubits
+        self.layers = layers
         self.n_embed_params = 2 * self.nqubits * self.block_width * self.block_heigth
         self.params_1layer = 2 * self.nqubits + self.n_embed_params
         # 180 = 2*9*9 + 2*9 per 9 qubit e blocchi 3x3
@@ -65,13 +77,20 @@ class MyClass:
         self.vparams = np.random.normal(
             loc=0, scale=1, size=(self.params_1layer * self.layers,)
         ).astype(np.complex128)
+
+        # PHYSICS
+        self.final_state = 0
         self.hamiltonian = self.create_hamiltonian()
-        self.options = {
-            "optimizer": self.method,
-            "learning_rate": self.learning_rate,
-            "nepochs": 1,
-            "nmessage": 5,
-        }
+
+        # NOMI FILES
+        self.nome_barplot = nome_barplot
+        self.nome_file = nome_file
+        self.name_predictions = name_predictions
+        self.name_qsphere = name_qsphere
+        self.output_folder = "visualization/"
+        self.output_qspheres = (
+            "qspheres/qspheres_q" + self.nqubits + "_l" + self.layers + "/"
+        )
 
     # ================
     # Miscellaneous functions
@@ -132,8 +151,21 @@ class MyClass:
             axis.set_ylabel("Number of Images")
             axis.set_title(title)
 
-        plt.savefig(self.nome_barplot)
+        plt.savefig(self.output_folder + self.nome_barplot)
         plt.close()
+
+    def visualize_state_sequence(self, filename):
+        image_files = [
+            self.output_folder
+            + self.output_qspheres
+            + self.name_qsphere
+            + "e"
+            + str(epoch)
+            + ".png"
+            for epoch in range(self.epochs_early_stopping)
+        ]
+        images = [imageio.imread(file) for file in image_files]
+        imageio.mimsave(self.output_folder + filename, images, duration=600)
 
     # ================
     # Circuit blocks
@@ -235,6 +267,7 @@ class MyClass:
             # AVERAGE POOLING
             c_aver = self.average_block(average_pooling_values, k)
             res_aver = c_aver(res_cent.state())
+            initial_state = res_aver.state()
 
             if k == self.layers - 1:
                 break
@@ -242,8 +275,11 @@ class MyClass:
             res_cent = c_ent(res_aver.state())
             initial_state = res_cent.state()
 
+        # RECORD FINAL STATE FOR GIF
+        self.final_state = initial_state
+
         # EXPECTATION
-        expectation_value = self.hamiltonian.expectation(res_aver.state())
+        expectation_value = self.hamiltonian.expectation(self.final_state)
         return expectation_value
 
     # ================
@@ -367,7 +403,9 @@ class MyClass:
         accuracy.update_state(self.y_test, predictions)
 
         if correction_name != None:
-            name = self.name_predictions + f"_{correction_name}_.png"
+            name = (
+                self.output_folder + self.name_predictions + f"_{correction_name}_.png"
+            )
             plot_predictions(predictions, self.x_test, self.y_test, name)
             return accuracy, predictions, self.y_test
         return accuracy
@@ -420,6 +458,12 @@ class MyClass:
                 validation_loss = self.validation_loop()
                 epoch_validation_loss.append(validation_loss)
 
+                # Figure for gif
+                if i % 2 == 0:
+                    visualize_state_sequence(
+                        self.final_state, self.output_folder + self.name_qsphere, i + 1
+                    )
+
                 with open(self.nome_file, "a") as file:
                     print(f"Loss training set: {e_train_loss}", file=file)
                     print(f"Loss validation set: {validation_loss}", file=file)
@@ -430,6 +474,8 @@ class MyClass:
                         print(">" * 60, file=file)
                         print(f"Early stopping at epoch {i + 1}.", file=file)
                         print(">" * 60, file=file)
+
+                    self.epochs_early_stopping = i
                     break
 
         else:
