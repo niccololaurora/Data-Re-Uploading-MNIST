@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import seaborn as sns
+import time
 from qclass import MyClass
 from qibo import set_backend
 from help_functions import (
@@ -116,6 +117,8 @@ def main():
                 print("/" * 60, file=file)
 
             # Training loop
+            # Start time
+            start_time = time.time()
             (
                 epoch_train_loss,
                 epoch_train_accuracy,
@@ -123,6 +126,9 @@ def main():
                 params,
                 epochs_stop,
             ) = my_class.training_loop()
+            # End time
+            end_time = time.time()
+            elapsed_time_minutes = (end_time - start_time) / 60
 
             # Plot training and validation loss
             plot_metrics(
@@ -148,6 +154,12 @@ def main():
 
             # Print Accuracy Test set
             with open(nome_file, "a") as file:
+                print(">" * 60, file=file)
+                print(
+                    f"Time taken (minutes): {elapsed_time_minutes:.2f}",
+                    file=file,
+                )
+                print(">" * 60, file=file)
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
                 print(f"Accuracy test set (after): {acc.result().numpy()}", file=file)

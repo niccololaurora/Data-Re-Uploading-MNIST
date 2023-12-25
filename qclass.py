@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import os
+import qibo
 import matplotlib.pyplot as plt
 from qibo.symbols import Z, I
 from qibo import Circuit, gates, hamiltonians, set_backend
@@ -12,7 +13,7 @@ from help_functions import (
     states_visualization,
 )
 
-
+qibo.set_threads(1)
 set_backend("tensorflow")
 
 
