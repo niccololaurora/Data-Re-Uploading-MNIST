@@ -15,23 +15,46 @@ set_backend("tensorflow")
 
 
 def main():
-    # epochs = 100
-    epochs = 2
+    # ==============
+    # Configuration
+    # ==============
+    epochs = 100
     learning_rate = 0.05
-    # training_sample = 500
-    training_sample = 10
-    # test_sample = 100
-    test_sample = 10
+    training_sample = 500
+    test_sample = 100
     method = "Adam"
-    # batch_size = 30
-    batch_size = 2
+    batch_size = 30
     layers = [1, 2, 3, 4, 5, 6]
     seed = 0
     block_sizes = [[2, 4], [3, 4], [4, 4], [4, 8]]
     nqubits = [8, 6, 4, 2]
     resize = 8
+    pooling = "max"
 
+    # ==============
+    # Files' name and creation folders
+    # ==============
     nome_barplot = "barplot.png"
+    output_folder = "visualization/"
+    output_losses = "losses/"
+    output_predictions = "predictions/"
+    output_distributions = "distributions/"
+    output_parameters = "trained_parameters/"
+    output_qspheres = "qspheres/"
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+        os.makedirs(output_folder + output_losses)
+        os.makedirs(output_folder + output_predictions)
+        os.makedirs(output_folder + output_distributions)
+        os.makedirs(output_folder + output_qspheres)
+
+    if not os.path.exists(output_parameters):
+        os.makedirs(output_parameters)
+
+    # ==============
+    # Loop
+    # ==============
     accuracy = []
     for k in range(len(nqubits)):
         accuracy_qubits = []
@@ -53,12 +76,18 @@ def main():
                 nome_file=nome_file,
                 name_qsphere=name_qsphere,
                 nome_barplot=nome_barplot,
+                output_folder=output_folder,
+                output_losses=output_losses,
+                output_predictions=output_predictions,
                 name_predictions=name_predictions,
+                output_distributions=output_distributions,
+                output_qspheres=output_qspheres,
                 layers=layers[j],
                 seed_value=seed,
                 test_sample=test_sample,
                 nqubits=nqubits[k],
                 resize=resize,
+                pooling=pooling,
                 block_width=block_sizes[k][0],
                 block_heigth=block_sizes[k][1],
             )
@@ -72,7 +101,9 @@ def main():
             # Test loop before training
             name = f"q{nqubits[k]}_l{layers[j]}_before"
             acc, predictions, labels = my_class.test_loop("before")
-            histogram_separation(predictions, labels, acc.result().numpy(), name)
+            my_class.histogram_separation(
+                predictions, labels, acc.result().numpy(), name
+            )
             with open(nome_file, "a") as file:
                 print("/" * 60, file=file)
                 print("/" * 60, file=file)
@@ -99,7 +130,7 @@ def main():
                 epoch_train_loss,
                 epoch_train_accuracy,
                 method,
-                name_metrics,
+                output_folder + output_losses + name_metrics,
                 epoch_validation_loss,
             )
 
@@ -107,13 +138,12 @@ def main():
             name = f"q{nqubits[k]}_l{layers[j]}_after"
             acc, predictions, labels = my_class.test_loop("after")
             accuracy_qubits.append(acc.result().numpy())
-            histogram_separation(predictions, labels, acc.result().numpy(), name)
+            my_class.histogram_separation(
+                predictions, labels, acc.result().numpy(), name
+            )
 
             # Save final parameters
-            if not os.path.exists("trained_parameters"):
-                os.makedirs("trained_parameters")
-
-            with open("trained_parameters/" + name_params, "wb") as f:
+            with open(output_parameters + name_params, "wb") as f:
                 pickle.dump(params, f, pickle.HIGHEST_PROTOCOL)
 
             # Print Accuracy Test set
@@ -130,16 +160,13 @@ def main():
     # Final summary of accuracies
     with open("summary.txt", "a") as file:
         for k in range(len(nqubits)):
+            print("/" * 60, file=file)
+            print(f"Number of qubits: {nqubits[k]}", file=file)
             for i in range(len(layers)):
-                print("/" * 60, file=file)
-                print("/" * 60, file=file)
-                print(f"Number of qubits: {nqubits[k]}", file=file)
                 print(
                     f"(Layers, Accuracy) = ({layers[i], accuracy[k][i]})",
                     file=file,
                 )
-                print("/" * 60, file=file)
-                print("/" * 60, file=file)
 
     # Heatmap
     heatmap(accuracy, nqubits, layers)

@@ -5,7 +5,12 @@ import matplotlib.pyplot as plt
 from qibo.symbols import Z, I
 from qibo import Circuit, gates, hamiltonians, set_backend
 from qibo.optimizers import optimize
-from help_functions import batch_data, calculate_batches, plot_predictions
+from help_functions import (
+    batch_data,
+    calculate_batches,
+    plot_predictions,
+    states_visualization,
+)
 
 
 set_backend("tensorflow")
@@ -30,6 +35,12 @@ class MyClass:
         nome_barplot,
         name_predictions,
         name_qsphere,
+        output_folder,
+        output_losses,
+        output_predictions,
+        output_distributions,
+        output_qspheres,
+        pooling,
     ):
         np.random.seed(seed_value)
 
@@ -60,12 +71,12 @@ class MyClass:
         # DATASET
         self.x_train = 0
         self.y_train = 0
+        self.batch_x = 0
+        self.batch_y = 0
         self.x_test = 0
         self.y_test = 0
         self.x_validation = 0
         self.y_validation = 0
-        self.batch_x = 0
-        self.batch_y = 0
 
         # ARCHITECTURE
         self.nqubits = nqubits
@@ -77,6 +88,7 @@ class MyClass:
         self.vparams = np.random.normal(
             loc=0, scale=1, size=(self.params_1layer * self.layers,)
         ).astype(np.complex128)
+        self.pooling = pooling
 
         # PHYSICS
         self.final_state = 0
@@ -87,10 +99,11 @@ class MyClass:
         self.nome_file = nome_file
         self.name_predictions = name_predictions
         self.name_qsphere = name_qsphere
-        self.output_folder = "visualization/"
-        self.output_qspheres = (
-            "qspheres/qspheres_q" + self.nqubits + "_l" + self.layers + "/"
-        )
+        self.output_folder = output_folder
+        self.output_qspheres = output_qspheres
+        self.output_distributions = output_distributions
+        self.output_losses = output_losses
+        self.output_predictions = output_predictions
 
     # ================
     # Miscellaneous functions
@@ -108,6 +121,10 @@ class MyClass:
 
     def set_parameters(self, vparams):
         self.vparams = vparams
+
+    # ================
+    # Visual
+    # ================
 
     def barplot(self):
         # Counting zeros and ones in each dataset
@@ -166,6 +183,50 @@ class MyClass:
         ]
         images = [imageio.imread(file) for file in image_files]
         imageio.mimsave(self.output_folder + filename, images, duration=600)
+
+    def histogram_separation(self, predictions, labels, accuracy, name):
+        # Costruisco due liste
+        # La prima lista contiene le predizioni che il modello ha fatto quando l'immagine era uno zero
+        zeros_predictions = [
+            pred for pred, label in zip(predictions, labels) if label == 0
+        ]
+        ones_predictions = [
+            pred for pred, label in zip(predictions, labels) if label == 1
+        ]
+
+        plt.hist(
+            [zeros_predictions, ones_predictions],
+            bins=20,
+            color=["red", "blue"],
+            label=["Zeros", "Ones"],
+            histtype="step",
+            linewidth=1.5,
+        )
+
+        plt.xlabel("Predictions")
+        plt.ylabel("Frequency")
+        plt.title("Predictions distribution")
+        plt.legend()
+
+        plt.text(
+            0.5,
+            0.9,
+            f"Accuracy: {accuracy:.2%}",
+            transform=plt.gca().transAxes,
+            color="black",
+            fontsize=10,
+            ha="center",
+        )
+
+        name_file = (
+            self.output_folder
+            + self.output_distributions
+            + "distribution_"
+            + name
+            + "_.png"
+        )
+        plt.savefig(name_file)
+        plt.close()
 
     # ================
     # Circuit blocks
@@ -243,11 +304,12 @@ class MyClass:
         return c
 
     def circuit(self, x):
-        # Suddivido l'immagine 9x9 in 9 blocchi 3x3 (appiattiti)
+        # Suddivido l'immagine in blocchi secondo la larghezza e la lunghezza richieste
         blocks = self.block_creator(x)
 
-        # Average pooling of each block
+        # Pooling of each block
         average_pooling_values = self.average_pooling(blocks)
+        max_pooling_values = self.max_pooling(blocks)
 
         # Entanglement block
         c_ent = self.entanglement_block()
@@ -256,6 +318,8 @@ class MyClass:
         tensor_size = 2**self.nqubits
         tensor_values = [1] + [0] * (tensor_size - 1)
         initial_state = tf.constant(tensor_values, dtype=tf.float32)
+
+        # Layers loop
         for k in range(self.layers):
             # EMBEDDING
             c_em = self.embedding_block(blocks, k)
@@ -264,22 +328,32 @@ class MyClass:
             # ENTANGLEMENT
             res_cent = c_ent(res_cem.state())
 
-            # AVERAGE POOLING
-            c_aver = self.average_block(average_pooling_values, k)
-            res_aver = c_aver(res_cent.state())
-            initial_state = res_aver.state()
+            # POOLING
+            res_pooling = 0
+            if self.pooling == "max":
+                # MAX POOLING
+                c_max = self.max_block(max_pooling_values, k)
+                res_pooling = c_max(res_cent.state())
+                initial_state = res_pooling.state()
+
+            elif self.pooling == "average":
+                # AVERAGE POOLING
+                c_aver = self.average_block(average_pooling_values, k)
+                res_pooling = c_aver(res_cent.state())
+                initial_state = res_pooling.state()
 
             if k == self.layers - 1:
+                # RECORD FINAL STATE FOR GIF
+                self.final_state = res_pooling.state(numpy=True)
                 break
+
             # ENTANGLEMENT
-            res_cent = c_ent(res_aver.state())
+            res_cent = c_ent(res_pooling.state())
             initial_state = res_cent.state()
 
-        # RECORD FINAL STATE FOR GIF
-        self.final_state = initial_state
-
         # EXPECTATION
-        expectation_value = self.hamiltonian.expectation(self.final_state)
+        final_state = initial_state
+        expectation_value = self.hamiltonian.expectation(final_state)
         return expectation_value
 
     # ================
@@ -404,7 +478,10 @@ class MyClass:
 
         if correction_name != None:
             name = (
-                self.output_folder + self.name_predictions + f"_{correction_name}_.png"
+                self.output_folder
+                + self.output_predictions
+                + self.name_predictions
+                + f"_{correction_name}_.png"
             )
             plot_predictions(predictions, self.x_test, self.y_test, name)
             return accuracy, predictions, self.y_test
@@ -459,10 +536,26 @@ class MyClass:
                 epoch_validation_loss.append(validation_loss)
 
                 # Figure for gif
-                if i % 2 == 0:
-                    visualize_state_sequence(
-                        self.final_state, self.output_folder + self.name_qsphere, i + 1
-                    )
+                if self.nqubits < 3:
+                    if i % 2 == 0:
+                        states_visualization(
+                            self.final_state,
+                            self.output_folder
+                            + self.output_qspheres
+                            + self.name_qsphere,
+                            i + 1,
+                            True,
+                        )
+                else:
+                    if i % 2 == 0:
+                        states_visualization(
+                            self.final_state,
+                            self.output_folder
+                            + self.output_qspheres
+                            + self.name_qsphere,
+                            i + 1,
+                            False,
+                        )
 
                 with open(self.nome_file, "a") as file:
                     print(f"Loss training set: {e_train_loss}", file=file)

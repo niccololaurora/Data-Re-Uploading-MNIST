@@ -79,8 +79,8 @@ def plot_metrics(
 
 
 def plot_predictions(predictions, x_data, y_data, name):
-    rows = 2
-    columns = 2
+    rows = 5
+    columns = 5
     fig, ax = plt.subplots(nrows=rows, ncols=columns, figsize=(12, 12))
 
     for i in range(rows):
@@ -152,13 +152,13 @@ def histogram_separation(predictions, labels, accuracy, name):
     plt.close()
 
 
-def states_visualization(stato, name, epoch):
+def states_visualization(stato, name, epoch, boolean):
     fig, ax = plt.subplots(figsize=(10, 10))
-    plot_state_qsphere(stato, ax=ax)
+    plot_state_qsphere(stato, ax=ax, show_state_labels=boolean)
     fig.text(0.2, 0.8, "Epoch " + str(epoch), fontsize=30)
     name_file = name + "e" + str(epoch) + ".png"
     fig.savefig(name_file)
-    plt.close(fig)
+    plt.close()
 
 
 def accuracy_vs_layers(accuracy, nqubits, layers):
